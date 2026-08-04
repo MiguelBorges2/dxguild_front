@@ -1,0 +1,36 @@
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mesa2-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a252f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="300" height="200" fill="url(#mesa2-bg)"/>
+  
+  <!-- Table top (rectangular) -->
+  <rect x="50" y="60" width="200" height="100" rx="10" fill="#1a1a1a" stroke="#8b4513" stroke-width="3"/>
+  
+  <!-- Table surface shine -->
+  <rect x="55" y="65" width="190" height="40" fill="#333333" opacity="0.5" rx="8"/>
+  
+  <!-- Candles -->
+  <rect x="70" y="40" width="8" height="30" fill="#ff8c00"/>
+  <ellipse cx="74" cy="38" rx="6" ry="8" fill="#ffa500"/>
+  
+  <rect x="226" y="40" width="8" height="30" fill="#ff8c00"/>
+  <ellipse cx="230" cy="38" rx="6" ry="8" fill="#ffa500"/>
+  
+  <!-- Map on table -->
+  <rect x="80" y="90" width="70" height="50" fill="#d4af37" stroke="#8b7500" stroke-width="2"/>
+  <line x1="85" y1="95" x2="145" y2="95" stroke="#8b7500" stroke-width="0.5"/>
+  <line x1="85" y1="105" x2="145" y2="105" stroke="#8b7500" stroke-width="0.5"/>
+  <line x1="85" y1="115" x2="145" y2="115" stroke="#8b7500" stroke-width="0.5"/>
+  <line x1="85" y1="125" x2="145" y2="125" stroke="#8b7500" stroke-width="0.5"/>
+  
+  <!-- Miniatures -->
+  <circle cx="160" cy="100" r="5" fill="#ff6b6b" stroke="#8b7500" stroke-width="1"/>
+  <circle cx="170" cy="105" r="5" fill="#4ecdc4" stroke="#8b7500" stroke-width="1"/>
+  <circle cx="175" cy="95" r="5" fill="#95e1d3" stroke="#8b7500" stroke-width="1"/>
+</svg>

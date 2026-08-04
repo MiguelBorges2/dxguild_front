@@ -1,0 +1,30 @@
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mesa3-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a235a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c1640;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="300" height="200" fill="url(#mesa3-bg)"/>
+  
+  <!-- Mystical table with runes -->
+  <circle cx="150" cy="100" r="85" fill="#1a0d23" stroke="#9b59b6" stroke-width="3"/>
+  
+  <!-- Inner circle -->
+  <circle cx="150" cy="100" r="70" fill="#2d1b4e" stroke="#d4af37" stroke-width="2"/>
+  
+  <!-- Magical glow -->
+  <circle cx="150" cy="100" r="60" fill="none" stroke="#9b59b6" stroke-width="1" opacity="0.5"/>
+  
+  <!-- Rune symbols around edge -->
+  <text x="150" y="50" text-anchor="middle" font-size="20" fill="#9b59b6">✦</text>
+  <text x="150" y="150" text-anchor="middle" font-size="20" fill="#9b59b6">✦</text>
+  <text x="80" y="105" text-anchor="middle" font-size="20" fill="#9b59b6">✦</text>
+  <text x="220" y="105" text-anchor="middle" font-size="20" fill="#9b59b6">✦</text>
+  
+  <!-- Center focus -->
+  <circle cx="150" cy="100" r="20" fill="#9b59b6" opacity="0.3"/>
+  <circle cx="150" cy="100" r="10" fill="#d4af37" opacity="0.6"/>
+</svg>

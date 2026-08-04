@@ -1,0 +1,36 @@
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mesa4-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1b4d3e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d2818;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="300" height="200" fill="url(#mesa4-bg)"/>
+  
+  <!-- Wooden table -->
+  <rect x="40" y="70" width="220" height="90" rx="15" fill="#2d5a4f" stroke="#1abc9c" stroke-width="3"/>
+  
+  <!-- Wood texture lines -->
+  <line x1="50" y1="75" x2="250" y2="75" stroke="#1abc9c" stroke-width="1" opacity="0.3"/>
+  <line x1="50" y1="95" x2="250" y2="95" stroke="#1abc9c" stroke-width="1" opacity="0.3"/>
+  <line x1="50" y1="115" x2="250" y2="115" stroke="#1abc9c" stroke-width="1" opacity="0.3"/>
+  <line x1="50" y1="135" x2="250" y2="135" stroke="#1abc9c" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Books/Spellbooks stack -->
+  <rect x="60" y="100" width="25" height="40" fill="#8b0000" stroke="#d4af37" stroke-width="1"/>
+  <rect x="65" y="95" width="25" height="40" fill="#a52a2a" stroke="#d4af37" stroke-width="1"/>
+  
+  <!-- Potion bottles -->
+  <ellipse cx="120" cy="120" rx="6" ry="10" fill="#ff6b6b" stroke="#d4af37" stroke-width="1"/>
+  <ellipse cx="120" cy="118" rx="6" ry="3" fill="#ff8787"/>
+  
+  <ellipse cx="135" cy="120" rx="6" ry="10" fill="#4ecdc4" stroke="#d4af37" stroke-width="1"/>
+  <ellipse cx="135" cy="118" rx="6" ry="3" fill="#45b7aa"/>
+  
+  <!-- Character miniature -->
+  <rect x="185" y="105" width="8" height="20" fill="#ff9999" stroke="#d4af37" stroke-width="1"/>
+  <circle cx="189" cy="100" r="5" fill="#ffcc99" stroke="#d4af37" stroke-width="1"/>
+  <polygon points="185,120 200,120 192.5,140" fill="#3d5a80" stroke="#d4af37" stroke-width="1"/>
+</svg>
