@@ -35,6 +35,7 @@ async function loadDashboard() {
     const mesas = await api.get(`http://localhost:8080/dxguild/mesa/usuario/${user.value?.id}`)
     const data2 = mesas.data.Criadas || {}
     createdTables.value = data2 || []
+    participatingTables.value = mesas.data.Participa || []
   } catch (e) {
     error.value = e.message || 'Erro ao carregar dashboard'
   } finally {
@@ -55,10 +56,11 @@ function closeCreateTableModal() {
 }
 function entraMesa(mesa) {
   console.log("mesa", mesa.criador, "user", user.value?.nome)
+  const nomeMesa = encodeURIComponent(mesa.nome);
   if(mesa.criador === user.value?.nome){
-    router.push(`/mesa/${mesa.nome}`)
+    router.push(`/mesa/${nomeMesa}`)
   } else {
-    router.push(`/mesa/${mesa.nome}`)
+    router.push(`/mesa/${nomeMesa}`)
   }
 
 }
@@ -226,14 +228,14 @@ onMounted(() => {
             <div class="table-main">
               <img :src="mesa.imagem || mesa.image || '/src/assets/imgs/fundo2.png'" alt="Imagem da mesa" class="table-thumb" />
               <div class="table-left">
-                <strong>{{ mesa.name }}</strong>
-                <div class="meta">{{ mesa.system }} • {{ mesa.players }} jogadores</div>
+                <strong>{{ mesa.nome }}</strong>
+                <div class="meta">{{ mesa.sistema }} • {{ mesa.players }} jogadores</div>
                 <div v-if="mesa.vaga !== false" class="vacancy-badge success">temos vaga</div>
                 <div v-else class="vacancy-badge danger">sem vagas</div>
               </div>
             </div>
             <div class="table-actions">
-              <button @click="$router.push(`/mesa/${mesa.id}`)">Entrar</button>
+              <button @click="entraMesa(mesa)">Entrar</button>
             </div>
           </li>
         </ul>

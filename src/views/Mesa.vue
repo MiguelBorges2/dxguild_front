@@ -6,6 +6,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {useAuthStore} from '@/stores/auth.js'
 import api from '../services/api.js'
+import axios from 'axios'
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -35,9 +36,10 @@ const mesa = computed(() => ({
 
 const mensagens = ref([])
 const jogadores = ref([
-  { nome: 'Ana', papel: 'Jogadora' },
-  { nome: 'Bruno', papel: 'Jogador' }
+
 ])
+const statusJogadores = ref(new Map())
+const arquivoImagem = ref(null)
 const novoJogador = ref('')
 const fichaLiberada = ref(false)
 const jogadorFicha = ref('')
@@ -48,16 +50,18 @@ const arquivosMesa = ref([
   { nome: 'Mapa do templo', tipo: 'Mapa' }
 ])
 
-const isMasterFlag = (value) => value === true || value === 'true' || value === 1 || value === '1'
+async function adicionarJogador() {
+  console.log('Adicionando jogador:', mesa.value.id)
+    try{
+      const res = await api.post(`http://localhost:8080/dxguild/mesa/usuario/adicionar`, {
+        idMesa: mesa.value.id,
+        nick: novoJogador.value
 
-function adicionarJogador() {
-  const nome = novoJogador.value.trim()
-  if (!nome) return
-
-  jogadores.value.push({ nome, papel: 'Jogador' })
-  avisoMestre.value = `Jogador ${nome} adicionado à mesa.`
-  novoJogador.value = ''
-}
+      })
+    } catch (e) {
+      console.error('Erro ao adicionar jogador:', e);
+    }
+} 
 
 function liberarFicha(jogador = jogadorFicha.value) {
   const nome = jogador?.trim?.() || ''
@@ -86,37 +90,109 @@ function adicionarArquivo(event) {
   event.target.value = ''
 }
 onUnmounted(() => {
+     if (stompClient.value) {
 
-  if (stompClient.value) {
     stompClient.value.deactivate();
+
   }
 });
 
-const enviarMensagem = () => {
+const enviarMensagem = (type) => {
   // Valida se a mensagem não está vazia e se o cliente está conectado
   if (!mensagem.value.trim() || !stompClient.value.connected) return;
     
   stompClient.value.publish({
    
-    destination: `/app/mesas/${route.params.id}`, 
+    destination: `/app/mesas/${route.params.nome}`, 
     body: JSON.stringify({
       input: mensagem.value,
       jogador: authStore.getUser(), // Obtém o nome do usuário do store
-      imagem: authStore.getImagem() // Obtém a imagem do usuário do store
-
+      imagem: authStore.getImagem(), // Obtém a imagem do usuário do store
+      tipo: type   // Define o tipo da mensagem, padrão para 'texto'
     })
   });
 
   mensagem.value = '';
 };
+const handleFileUpload = (event) => {
+
+  const target = event.target
+
+  if (target.files && target.files[0]) {
+
+    arquivoImagem.value = target.files[0]
+
+    enviarImagem()
+  }
+
+}
+const enviarParaCloudinary = async (file) => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', 'dxguild')
+
+    const cloudName = 'dwt6xjnmh'
+    const cloudinaryRes = await axios.post(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      formData
+    )
+
+    // Retorna apenas a string da URL segura
+    return cloudinaryRes.data.secure_url
+  } catch (error) {
+    console.error('Erro ao enviar imagem para o Cloudinary:', error)
+    throw error
+  }
+}
+const enviarImagem = async () => {
+  try {
+    let urlImagemFinal = null
+
+    // Se o usuário selecionou uma imagem, faz o upload primeiro
+    if (arquivoImagem.value) {
+      urlImagemFinal = await enviarParaCloudinary(arquivoImagem.value)
+    }
+
+    // Monta o objeto para enviar ao seu backend (Spring Boot)
+    stompClient.value.publish({
+   
+    destination: `/app/mesas/${route.params.nome}`, 
+    body: JSON.stringify({
+      input: urlImagemFinal,
+      jogador: authStore.getUser(), // Obtém o nome do usuário do store
+      imagem: authStore.getImagem(), // Obtém a imagem do usuário do store
+      tipo: 'imagem'  // Define o tipo da mensagem, padrão para 'texto'
+    })
+  }); 
+
+  mensagem.value = '';
+  } catch (e) {
+    console.error('Erro ao enviar mensagem:', e)
+  }
+}
 onMounted(async () => {
     try {
         const nomeMesa = encodeURIComponent(route.params.nome || route.params.id || '')
         const res = await api.get(`http://localhost:8080/dxguild/mesa/${nomeMesa}`)
-        const dadosMesa = res.data || {}
+        const dadosMesa = res.data.mesa || {}
+        const players = res.data.jogadores || []
+        players.forEach(player => {
+          statusJogadores.value.set(player.nome, false);
+          jogadores.value.push(player);
+        });
+        statusJogadores.value.set(dadosMesa.criador, false);
+        console.log('Status:', statusJogadores.value)
+        
+        console.log(dadosMesa)
         const usuarioAtual = authStore.getUser()
         const criadorMesa = dadosMesa.criador || dadosMesa.mestre || dadosMesa.nomeCriador || dadosMesa.createdBy || ''
-
+        const chat = res.data.mensaagens || []
+        const chatOrdenado = chat.sort((a, b) => new Date(a.dataEnvio) - new Date(b.dataEnvio));
+        console.log(chatOrdenado)
+        chatOrdenado.forEach(element => {
+          mensagens.value.push(element);
+        });
         mestre.value = Boolean(
           dadosMesa.mestre === true ||
           dadosMesa.mestre === 'true' ||
@@ -148,11 +224,39 @@ onMounted(async () => {
         onConnect: () => {
             console.log('Conectado ao WebSocket!');
             console.log(route.params.id)
-            stompClient.value.subscribe(`/topic/mesa/${route.params.id}`, (mensagemRecebida) => {
+            stompClient.value.subscribe(`/topic/mesa/${route.params.nome}`, (mensagemRecebida) => {
                 const dados = JSON.parse(mensagemRecebida.body);
+                console.log("Mensagem recebida:", dados);
+                if(dados.tipo === 'ping') {
+                  const atinga = statusJogadores.value.get(dados.nick);
+                  statusJogadores.value.set(dados.nick, dados.ping);
+                  console.log("status parte 2", statusJogadores.value);
+                  if(dados.nick != authStore.getUser() && dados.ping === true && atinga == false) {
+                    
+                    stompClient.value.publish({
+                      destination: `/app/mesas/ping/${route.params.nome}`, 
+                      body: JSON.stringify({
+                        nick: authStore.getUser(), // Obtém o nome do usuário do store
+                        ping: true,
+                        tipo: 'ping'  // Define o tipo da mensagem, padrão para 'texto'
+                      })
+                    });
+                  }
+                  return;
+                }
                 mensagens.value.push(dados);
                 console.log(mensagens.value)
             });
+            stompClient.value.publish({
+          
+            destination: `/app/mesas/ping/${route.params.nome}`, 
+            body: JSON.stringify({
+          
+              nick: authStore.getUser(), // Obtém o nome do usuário do store
+              ping: true,
+              tipo: 'ping'  // Define o tipo da mensagem, padrão para 'texto'
+            })
+          });
         },
         onStompError: (frame) => {
             console.error('Erro no STOMP: ' + frame.headers['message']);
@@ -160,8 +264,13 @@ onMounted(async () => {
     });
 
     stompClient.value.activate();
+    
+    
 });
+
 const mensagem = ref('')
+const dadosSelecionados = ref([])
+const bonusRolagem = ref(0)
 const painelMobile = ref(null)
 const painelMobileAberto = ref(false)
 
@@ -180,6 +289,36 @@ function abrirPainelMobile(painel) {
 function fecharPainelMobile() {
   painelMobileAberto.value = false
   painelMobile.value = null
+}
+
+const participanteFoto = (participante) => participante?.foto || participante?.imagem || participante?.image || participante?.avatar || ''
+const participanteOnline = (participante) => participante?.online === true || participante?.online === 'true' || participante?.status === 'online' || participante?.conectado === true
+const iniciaisParticipante = (nome) => (nome || '?').split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
+
+function adicionarDado(lados) {
+  dadosSelecionados.value.push(lados)
+}
+
+function removerDado(indice) {
+  dadosSelecionados.value.splice(indice, 1)
+}
+
+function rolarDados() {
+  if (!dadosSelecionados.value.length || !stompClient.value?.connected) return
+
+  const resultados = dadosSelecionados.value.map((lados) => Math.floor(Math.random() * lados) + 1)
+  const bonus = Number(bonusRolagem.value) || 0
+  const total = resultados.reduce((soma, valor) => soma + valor, bonus)
+  const detalhes = dadosSelecionados.value.map((lados, indice) => `d${lados} (${resultados[indice]})`).join(' + ')
+  const resultadoRolagem = `${detalhes}${bonus ? ` ${bonus > 0 ? '+' : '-'} ${Math.abs(bonus)}` : ''} = ${total}`
+
+  stompClient.value.publish({
+    destination: `/app/mesas/${route.params.nome}`,
+    body: JSON.stringify({ input: resultadoRolagem, jogador: authStore.getUser(), imagem: authStore.getImagem(), tipo: 'rolagem' })
+  })
+
+  dadosSelecionados.value = []
+  bonusRolagem.value = 0
 }
 
 
@@ -259,7 +398,9 @@ function fecharPainelMobile() {
               <div class="players-box-title">Jogadores na mesa</div>
               <ul class="players-list">
                 <li v-for="jogador in jogadores" :key="jogador.nome">
-                  <span>{{ jogador.nome }} — {{ jogador.papel }}</span>
+                  <li class="d-flex justify-content-center " v-for="jogador in jogadores" :key="jogador.nome">
+                     <span>{{ jogador.nome }} - Player</span>
+                  </li>
                   <button type="button" class="link-btn" @click="liberarFicha(jogador.nome)">
                     {{ jogadorFicha === jogador.nome && fichaLiberada ? 'Liberada' : 'Liberar ficha' }}
                   </button>
@@ -302,10 +443,26 @@ function fecharPainelMobile() {
 
         <section class="panel">
           <div class="panel-title">Participantes</div>
-          <ul class="members-list">
-            <li>Caio — Mestre</li>
-            <li v-for="jogador in jogadores" :key="jogador.nome">{{ jogador.nome }} — {{ jogador.papel }}</li>
-          </ul>
+          <div class="members-list">
+            <div class="member-card">
+              <div class="member-avatar">
+                <img v-if="mesa.imagem" :src="mesa.imagem" alt="Foto do mestre" />
+                <span v-else>{{ iniciaisParticipante(mesa.mestre) }}</span>
+              </div>
+              <div class="member-info"><strong>{{ mesa.mestre }}</strong><span>Mestre</span></div>
+              <span v-if="statusJogadores.get(mesa.mestre) === false" class="presence-dot" ></span>
+              <span v-if="statusJogadores.get(mesa.mestre) === true" class="online" :class="online"></span>
+            </div>
+            <div v-for="jogador in jogadores" :key="jogador.nome" class="member-card">
+              <div class="member-avatar">
+                <img v-if="participanteFoto(jogador)" :src="participanteFoto(jogador)" :alt="`Foto de ${jogador.nome}`" />
+                
+              </div>
+              <div class="member-info"><strong>{{ jogador.nome }}</strong><span>{{ jogador.papel || 'Player' }}</span></div>
+              <span v-if="statusJogadores.get(jogador.nome) === false" class="presence-dot" ></span>
+              <span v-if="statusJogadores.get(jogador.nome) === true" class="online"></span>
+            </div>
+          </div>
         </section>
       </aside>
 
@@ -351,7 +508,9 @@ function fecharPainelMobile() {
                   <div class="players-box-title">Jogadores na mesa</div>
                   <ul class="players-list">
                     <li v-for="jogador in jogadores" :key="jogador.nome">
-                      <span>{{ jogador.nome }} — {{ jogador.papel }}</span>
+                      <li v-for="jogador in jogadores" :key="jogador.nome">
+                      {{ jogador.nome }} — <span>player</span>
+                    </li>
                       <button type="button" class="link-btn" @click="liberarFicha(jogador.nome)">
                         {{ jogadorFicha === jogador.nome && fichaLiberada ? 'Liberada' : 'Liberar ficha' }}
                       </button>
@@ -392,10 +551,18 @@ function fecharPainelMobile() {
               <p class="helper-text">{{ avisoMestre || (fichaLiberada ? 'A ficha já está liberada para o grupo.' : 'As fichas permanecem restritas até você liberar.') }}</p>
             </div>
 
-            <ul class="members-list">
-              <li>Caio — Mestre</li>
-              <li v-for="jogador in jogadores" :key="jogador.nome">{{ jogador.nome }} — {{ jogador.papel }}</li>
-            </ul>
+            <div class="members-list">
+              <div class="member-card">
+                <div class="member-avatar"><img v-if="mesa.imagem" :src="mesa.imagem" alt="Foto do mestre" /><span v-else>{{ iniciaisParticipante(mesa.mestre) }}</span></div>
+                <div class="member-info"><strong>{{ mesa.mestre }}</strong><span>Mestre</span></div>
+                <span v-if="statusJogadores.get(jogador.nome)" class="presence-dot" :class="online"></span>
+              </div>
+              <div v-for="jogador in jogadores" :key="jogador.nome" class="member-card">
+                <div class="member-avatar"><img v-if="participanteFoto(jogador)" :src="participanteFoto(jogador)" :alt="`Foto de ${jogador.nome}`" /><span v-else>{{ iniciaisParticipante(jogador.nome) }}</span></div>
+                <div class="member-info"><strong>{{ jogador.nome }}</strong><span>{{ jogador.papel || 'Player' }}</span></div>
+                <span v-if="statusJogadores.get(jogador.nome)" class="presence-dot" :class="online"></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -406,17 +573,73 @@ function fecharPainelMobile() {
           <div class="messages-content">
             <div v-for="msg in mensagens" :key="msg.id" class="message-item d-flex justify-content-start align-items-center">
               <img :src="msg.image" alt="Avatar" class="rounded-circle me-2" width="40" height="40">
-              <div>
+              <div class="w-100">
                 <div class="message-head">
                   <strong>{{ msg.criador }}</strong>
-                  <span>{{ new Date(msg.dataEnvio).toLocaleTimeString() }}</span>
+                  <span>{{ new Date(msg.dataEnvio).toLocaleTimeString() }} : {{ new Date(msg.dataEnvio).toLocaleDateString() }}</span>
                 </div>
-                <p class="break">{{ msg.message }}</p>
+                <p v-if="!msg.tipo || msg.tipo === 'texto'" class="break">{{ msg.message ?? msg.input ?? msg.mensagem }}</p>
+                <img
+                  v-else-if="msg.tipo === 'imagem'"
+                  :src="msg.message ?? msg.input ?? msg.mensagem"
+                  alt="Imagem enviada no chat"
+                  class="message-image"
+                />
+                <div v-else-if="msg.tipo === 'rolagem'" class="roll-message">
+                  <span class="roll-message-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="m12 2 8 5v10l-8 5-8-5V7l8-5Z" />
+                      <circle cx="9" cy="9" r="1" />
+                      <circle cx="15" cy="15" r="1" />
+                      <circle cx="9" cy="15" r="1" />
+                      <circle cx="15" cy="9" r="1" />
+                    </svg>
+                  </span>
+                  <span class="break">{{ msg.message ?? msg.input ?? msg.mensagem }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <form class="composer" @submit.prevent="enviarMensagem">
+        <form class="composer" @submit.prevent="enviarMensagem('texto')">
+          <label class="composer-icon-btn" for="chat-image" title="Selecionar imagem">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <circle cx="8.5" cy="9" r="1.5" />
+              <path d="m4 17 5-5 3.5 3.5 2.5-2.5 5 5" />
+            </svg>
+            <span class="sr-only">Selecionar imagem</span>
+          </label>
+          <input id="chat-image" class="chat-image-input" type="file" accept="image/*" @change="handleFileUpload"/>
+
+          <div class="dice-picker">
+            <button type="button" class="composer-icon-btn dice-trigger" title="Selecionar dado" aria-label="Selecionar dado">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 2 8 5v10l-8 5-8-5V7l8-5Z" />
+                <circle cx="9" cy="9" r="1" />
+                <circle cx="15" cy="15" r="1" />
+                <circle cx="9" cy="15" r="1" />
+                <circle cx="15" cy="9" r="1" />
+              </svg>
+            </button>
+            <div v-if="dadosSelecionados.length" class="roll-builder" aria-label="Dados selecionados">
+              <div class="roll-builder-title">Rolagem</div>
+              <div class="selected-dice">
+                <button v-for="(lados, indice) in dadosSelecionados" :key="`${lados}-${indice}`" type="button" class="selected-die" :title="`Remover d${lados}`" @click="removerDado(indice)">
+                  {{ lados }} <span aria-hidden="true">×</span>
+                </button>
+              </div>
+              <label class="roll-bonus">Bônus <input v-model.number="bonusRolagem" type="number" step="1" aria-label="Bônus da rolagem" /></label>
+              <button type="button" class="roll-button" @click="rolarDados">Rolar</button>
+            </div>
+            <div class="dice-menu" role="menu" aria-label="Escolher dado">
+              <button type="button" class="dice-option" role="menuitem" @click="adicionarDado(4)"><span class="dice-shape d4">△</span>d4</button>
+              <button type="button" class="dice-option" role="menuitem" @click="adicionarDado(6)"><span class="dice-shape d6">⬡</span>d6</button>
+              <button type="button" class="dice-option" role="menuitem" @click="adicionarDado(8)"><span class="dice-shape d8">◆</span>d8</button>
+              <button type="button" class="dice-option" role="menuitem" @click="adicionarDado(10)"><span class="dice-shape d10">⬟</span>d10</button>
+              <button type="button" class="dice-option" role="menuitem" @click="adicionarDado(100)"><span class="dice-shape d100">◈</span>d100</button>
+            </div>
+          </div>
           <input v-model="mensagem" type="text" placeholder="Escreva uma mensagem..." />
           <button type="submit">Enviar</button>
         </form>
@@ -760,6 +983,92 @@ function fecharPainelMobile() {
   margin: 0;
 }
 
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(212,175,55,0.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.035);
+}
+
+.member-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  overflow: hidden;
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(212,175,55,0.3), rgba(40,40,40,0.9));
+  color: #f7e7b9;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-info {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.member-info strong,
+.member-info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-info strong {
+  color: #f7e7b9;
+  font-size: 0.78rem;
+}
+
+.member-info span {
+  color: #b9aa76;
+  font-size: 0.66rem;
+  text-transform: capitalize;
+}
+
+.presence-dot {
+  width: 0.52rem;
+  height: 0.52rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(0,0,0,0.35);
+  border-radius: 50%;
+  background: #777;
+  box-shadow: 0 0 0 2px rgba(119,119,119,0.12);
+}
+
+.online {
+   width: 0.52rem;
+  height: 0.52rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(0,0,0,0.35);
+  border-radius: 50%;
+  background: #777;
+  box-shadow: 0 0 0 2px rgba(119,119,119,0.12);
+  background: #39d477;
+  box-shadow: 0 0 0 2px rgba(57,212,119,0.16), 0 0 10px rgba(57,212,119,0.55);
+}
+
 .folder-group {
   margin-bottom: 0.75rem;
 }
@@ -841,6 +1150,7 @@ li {
 }
 
 .message-head {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -858,8 +1168,54 @@ li {
   line-height: 1.45;
 }
 
+.message-image {
+  display: block;
+  width: min(100%, 360px);
+  height: 220px;
+  max-width: 100%;
+  margin-top: 0.35rem;
+  border: 1px solid rgba(212,175,55,0.24);
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(0,0,0,0.3);
+}
+
+.roll-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(212,175,55,0.32);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.18), rgba(0,0,0,0.24));
+  color: #f7e7b9;
+  font-weight: 700;
+}
+
+.roll-message-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: #f0e68c;
+}
+
+.roll-message-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .composer {
+  position: relative;
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   padding: 0.45rem;
   border-radius: 999px;
@@ -868,7 +1224,7 @@ li {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
-.composer input {
+.composer > input:not(.chat-image-input) {
   padding: 0.85rem 0.95rem;
   border-radius: 999px;
   border: 1px solid rgba(212,175,55,0.2);
@@ -878,7 +1234,213 @@ li {
   width: 100%;
 }
 
-.composer button {
+.composer-icon-btn {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  padding: 0;
+  border: 1px solid rgba(212,175,55,0.24);
+  border-radius: 50%;
+  background: rgba(0,0,0,0.32);
+  color: #f0e68c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.composer-icon-btn:hover,
+.dice-picker:focus-within .dice-trigger {
+  border-color: rgba(240,230,140,0.7);
+  background: rgba(212,175,55,0.14);
+  box-shadow: 0 0 16px rgba(212,175,55,0.18);
+}
+
+.composer-icon-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer .chat-image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dice-picker {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.roll-builder {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: calc(100% + 5.65rem);
+  width: 15.5rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(212,175,55,0.34);
+  border-radius: 12px;
+  background: rgba(12,12,12,0.98);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.48);
+}
+
+.roll-builder-title {
+  margin-bottom: 0.5rem;
+  color: #f0e68c;
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.selected-dice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.selected-die {
+  padding: 0.28rem 0.45rem;
+  border: 1px solid rgba(212,175,55,0.28);
+  border-radius: 999px;
+  background: rgba(212,175,55,0.12);
+  color: #f7e7b9;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.selected-die:hover {
+  border-color: rgba(240,230,140,0.7);
+  background: rgba(212,175,55,0.22);
+}
+
+.selected-die span {
+  margin-left: 0.2rem;
+  color: #f0e68c;
+}
+
+.roll-bonus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+  color: #cdbf90;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.roll-bonus input {
+  width: 4.25rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(212,175,55,0.28);
+  border-radius: 7px;
+  background: rgba(0,0,0,0.38);
+  color: #f7e7b9;
+  text-align: center;
+}
+
+.roll-button {
+  width: 100%;
+  padding: 0.48rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #d4af37, #f0e68c);
+  color: #000;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.roll-button:hover {
+  box-shadow: 0 6px 16px rgba(212,175,55,0.24);
+}
+
+.dice-menu {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: calc(100% + 0.65rem);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(3.4rem, 1fr));
+  gap: 0.35rem;
+  width: max-content;
+  padding: 0.45rem;
+  border: 1px solid rgba(212,175,55,0.28);
+  border-radius: 12px;
+  background: rgba(12,12,12,0.98);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.48);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.35rem);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.dice-picker:hover .dice-menu,
+.dice-picker:focus-within .dice-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.dice-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 3.4rem;
+  padding: 0.38rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #e3d6b0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dice-option:hover,
+.dice-option:focus-visible {
+  border-color: rgba(212,175,55,0.34);
+  background: rgba(212,175,55,0.13);
+  outline: none;
+}
+
+.dice-shape {
+  color: #f0e68c;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.d4 { transform: scaleX(1.12); }
+.d10 { transform: scaleY(1.12); }
+.d100 { font-size: 1.45rem; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.composer > button {
   padding: 0.8rem 1rem;
   border: none;
   border-radius: 999px;
@@ -890,7 +1452,7 @@ li {
   transition: transform 0.2s ease;
 }
 
-.composer button:hover {
+.composer > button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(212,175,55,0.24);
 }
@@ -994,6 +1556,37 @@ li {
 }
 
 @media (min-width: 901px) {
+  .mesa-page {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .mesa-header {
+    flex: 0 0 auto;
+  }
+
+  .mesa-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .sidebar {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .chat-panel {
+    min-height: 0;
+  }
+
+  .messages {
+    min-height: 0;
+  }
+
   .mobile-actions,
   .mobile-panel-overlay {
     display: none;

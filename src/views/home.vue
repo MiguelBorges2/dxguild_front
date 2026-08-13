@@ -62,7 +62,7 @@ onMounted(async () => {
           }
           else {
             console.log("ta aqui" + e.response.data)
-            erroLog.value = "Erro no Login: " + ( e.response?.data?.error?.message  || e.response?.data || "Erro desconhecido.");
+            erroLog.value = "Erro no Login: " + ( e.response?.data?.error?.message  || e.response?.data?.erro ||e.response?.data || "Erro desconhecido.");
             return;
           }
         }else{
@@ -153,16 +153,10 @@ async function handleRegister(){
       <section class="hero-section">
         <img class="fundo" src="../assets/imgs/fundo2.png" alt="Fundo da página" />
         <div class="hero-overlay"></div>
-        <div class="hero-atmosphere" aria-hidden="true">
-          <span class="orb orb-one"></span>
-          <span class="orb orb-two"></span>
-          <span class="hero-rune rune-one">✦</span>
-          <span class="hero-rune rune-two">✧</span>
-          <span class="hero-rune rune-three">✦</span>
-        </div>
+       
         <div class="hero-content">
           <div class="hero-text">
-            <span class="eyebrow"><span class="live-dot"></span> A guilda está reunida</span>
+            
             <h1 class="title">DXGuild</h1>
             <p class="subtitle">Bem-vindo ao Reino das Aventuras Épicas</p>
             <p class="description">Uma jornada aguarda você em mundos repletos de mistério, magia e glória</p>
@@ -175,26 +169,11 @@ async function handleRegister(){
                 Cadastrar
               </button>
             </div>
-            <div class="hero-trust">
-              <span><b>01</b> encontre uma mesa</span>
-              <span><b>02</b> reúna seu grupo</span>
-              <span><b>03</b> viva a aventura</span>
-            </div>
+           
           </div>
 
-          <div class="hero-visual">
-            <div class="hero-dragon">
-                <img src="../assets/imgs/hero.png" alt="Criatura fantástica protegendo a guilda" />
-            </div>
-            <aside class="campaign-preview" aria-label="Próxima aventura em destaque">
-              <div class="preview-topline"><span class="preview-pulse"></span> Aventura em destaque</div>
-              <div class="preview-title-row">
-                <span class="preview-die">d20</span>
-                <div><strong>Portões de Eldoria</strong><small>Fantasia • Online</small></div>
-              </div>
-              <div class="preview-divider"></div>
-              <div class="preview-meta"><span><b>05</b> aventureiros</span><span>Hoje, 20:00</span></div>
-            </aside>
+          <div class="hero-dragon">
+              <img src="../assets/imgs/hero.png" />
           </div>
         </div>
 
@@ -215,7 +194,6 @@ async function handleRegister(){
             <div v-for="table in recentTables" :key="table.id" class="table-card" @click="router.push(`/mesa/${table.id}`)">
               <div class="table-image">
                 <img :src="table.imagem" :alt="table.name" />
-                <span class="table-status"><span></span> Recrutando</span>
               </div>
               
               <div class="table-header">
@@ -238,12 +216,11 @@ async function handleRegister(){
                
               </div>
               <div class="vacancy-badge">
-                <span>Temos vaga</span>
+                <span>temos vaga</span>
               </div>
               <button class="btn-join" @click.stop="router.push(`/mesa/${table.id}`)">Entrar na Mesa</button>
             </div>
           </div>
-          <p v-if="!recentTables.length" class="empty-tables">Nenhuma mesa recente encontrada. Volte em breve para novas aventuras.</p>
         </div>
         
       </section>
@@ -316,7 +293,7 @@ async function handleRegister(){
 
             <button type="submit" class="btn btn-submit">Entrar</button>
           </form>
-         <p class="erro" v-if="erroLog">{{ erroLog }}</p>
+         <p class="erro" v-if="erroLog">{{ erroLog }}</p>>
           <p class="modal-footer">
             Não tem conta? <button class="link-btn" @click="showLoginModal = false; showRegisterModal = true">Cadastre-se</button>
           </p>
@@ -1224,145 +1201,7 @@ async function handleRegister(){
  
 }
 
-/* Contemporary home view refresh */
-.home {
-  --ink: #090a0f;
-  --panel: #13131d;
-  --panel-soft: #1b1a28;
-  --gold: #f3c969;
-  --cream: #fff5d9;
-  --muted: #b8b4c2;
-  background: var(--ink);
-  color: #fff;
-}
 
-.hero-section {
-  min-height: min(860px, 100vh);
-  isolation: isolate;
-  background: #0a0910;
-}
-
-.hero-section::before,
-.hero-section::after {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.hero-section::before {
-  width: 36rem;
-  height: 36rem;
-  right: -14rem;
-  top: -12rem;
-  background: rgba(174, 87, 36, .24);
-  filter: blur(38px);
-}
-
-.hero-section::after {
-  width: 24rem;
-  height: 24rem;
-  left: 9%;
-  bottom: -14rem;
-  background: rgba(102, 61, 158, .18);
-  filter: blur(36px);
-}
-
-.fundo { opacity: .58; filter: saturate(.72) contrast(1.08); }
-.hero-overlay { background: linear-gradient(90deg, rgba(7, 7, 12, .96) 0%, rgba(9, 8, 13, .84) 45%, rgba(8, 7, 13, .36) 100%); }
-.hero-content { max-width: 1240px; min-height: min(860px, 100vh); margin: 0 auto; padding: 7rem 2.5rem 6rem; gap: 1.5rem; }
-.hero-text { max-width: 650px; width: 56%; align-items: flex-start; }
-.eyebrow { display: inline-flex; align-items: center; gap: .55rem; color: var(--gold); font-family: 'Cinzel', serif; font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.live-dot { width: .48rem; height: .48rem; border-radius: 50%; background: #67d690; box-shadow: 0 0 0 .25rem rgba(103, 214, 144, .16); }
-.title { margin: 1rem 0 .35rem; font-size: clamp(4.25rem, 8vw, 7.5rem); line-height: .86; letter-spacing: .03em; text-shadow: 0 12px 40px rgba(0,0,0,.42); }
-.subtitle { max-width: 570px; margin: 0 0 1rem; color: var(--cream); font-family: 'Cinzel', serif; font-size: clamp(1.2rem, 2.4vw, 1.8rem); font-weight: 600; line-height: 1.3; }
-.description { max-width: 490px; margin-bottom: 2rem; color: var(--muted); font-size: 1.08rem; }
-.auth-buttons { gap: .8rem; }
-.btn { border-radius: .7rem; padding: .9rem 1.55rem; font-size: .78rem; letter-spacing: .09em; }
-.btn-login { background: linear-gradient(135deg, #ffe19a, #d99332); border: 1px solid #ffe2a3; box-shadow: 0 10px 30px rgba(220, 153, 51, .22); }
-.btn-register { color: var(--cream); border-color: rgba(255,245,217,.35); background: rgba(255,255,255,.06); box-shadow: none; backdrop-filter: blur(8px); }
-.btn:hover, .btn-join:hover { transform: translateY(-2px); }
-.hero-trust { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: 2rem; color: #a8a3b0; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
-.hero-trust b { margin-right: .25rem; color: var(--gold); font-family: 'Cinzel', serif; }
-.hero-dragon { width: 44%; justify-content: flex-end; }
-.hero-dragon img { max-width: min(100%, 430px); min-width: 0; filter: drop-shadow(0 24px 32px rgba(0,0,0,.5)); }
-.fade-to-black { height: 220px; background: linear-gradient(to bottom, transparent, var(--ink)); }
-
-.recent-tables-section { padding: 6rem 2rem 5rem; min-height: 0; background: radial-gradient(circle at 50% 0%, #202033 0, var(--ink) 45%); }
-.tables-container, .features-container { min-height: 0; max-width: 1200px; margin: 0 auto; }
-.section-title { font-size: clamp(2rem, 4vw, 3rem); color: var(--cream); letter-spacing: -.02em; }
-.section-subtitle { color: var(--muted); font-style: normal; margin-bottom: 2.75rem; }
-.tables-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-.table-card { position: relative; overflow: hidden; padding: .7rem; border: 1px solid rgba(255,255,255,.1); border-radius: 1rem; background: linear-gradient(145deg, rgba(35,34,48,.96), rgba(16,16,24,.96)); box-shadow: 0 18px 45px rgba(0,0,0,.22); }
-.table-card:hover { border-color: rgba(243,201,105,.62); background: linear-gradient(145deg, #29273a, #171620); box-shadow: 0 22px 42px rgba(0,0,0,.34); }
-.table-image { position: relative; height: 165px; margin-bottom: 1rem; border: 0; border-radius: .7rem; }
-.table-image::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgba(0,0,0,.52)); pointer-events: none; }
-.table-status { position: absolute; z-index: 1; top: .65rem; left: .65rem; display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .55rem; border: 1px solid rgba(255,255,255,.18); border-radius: 99px; background: rgba(9,10,15,.68); color: #e8fbed; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; backdrop-filter: blur(8px); }
-.table-status span { width: .36rem; height: .36rem; border-radius: 50%; background: #62dd91; }
-.table-header { justify-content: flex-start; margin: .1rem .7rem .9rem; text-align: left; }
-.table-name { color: var(--cream); font-size: 1.12rem; text-transform: none; }
-.table-info { margin: 0 .7rem 1rem; }
-.info-row { padding: .45rem 0; margin: 0; border-top: 1px solid rgba(255,255,255,.07); font-size: .82rem; }
-.info-label { color: #8e899a; font-weight: 500; }
-.info-value { max-width: 55%; overflow: hidden; color: #ded9e5; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-.vacancy-badge { width: auto; align-self: flex-start; margin: 0 .7rem .85rem; padding: .34rem .55rem; border: 1px solid rgba(107,223,153,.3); border-radius: .45rem; background: rgba(46, 155, 89, .15); box-shadow: none; font-size: .62rem; }
-.btn-join { width: calc(100% - 1.4rem); margin: 0 .7rem .15rem; border-radius: .6rem; padding: .78rem 1rem; background: linear-gradient(135deg, #f5d681, #c67c2d); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
-.empty-tables { margin: 2rem 0 0; color: var(--muted); text-align: center; }
-
-.journey-section { position: relative; overflow: hidden; padding: 5rem 2rem; background: #0f0f18; border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
-.journey-section::before { content: 'DXG'; position: absolute; right: -1rem; top: -3rem; color: rgba(255,255,255,.025); font-family: 'Cinzel', serif; font-size: clamp(11rem, 25vw, 25rem); font-weight: 700; line-height: 1; }
-.journey-container { position: relative; z-index: 1; display: grid; grid-template-columns: .75fr 1.25fr; gap: 4rem; max-width: 1200px; margin: auto; align-items: center; }
-.journey-intro h2 { max-width: 450px; margin: .8rem 0 1rem; color: var(--cream); font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3vw, 2.8rem); line-height: 1.16; }
-.journey-intro p { max-width: 430px; color: var(--muted); line-height: 1.7; }
-.journey-steps { display: grid; gap: .75rem; }
-.journey-step { display: grid; grid-template-columns: 3.25rem 1fr; gap: 1rem; padding: 1.15rem; border: 1px solid rgba(255,255,255,.08); border-radius: .8rem; background: rgba(255,255,255,.035); transition: transform .25s ease, border-color .25s ease; }
-.journey-step:hover { transform: translateX(.3rem); border-color: rgba(243,201,105,.42); }
-.step-number { color: var(--gold); font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700; }
-.journey-step h3 { margin: 0 0 .25rem; color: var(--cream); font-family: 'Cinzel', serif; font-size: 1rem; }
-.journey-step p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
-
-.features-section { min-height: 0; padding: 6rem 2rem; }
-.features-section::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(9,10,15,.22), rgba(9,10,15,.85)); z-index: 1; }
-.features-container { display: block; }
-.features-grid { gap: 1rem; }
-.feature-card { border: 1px solid rgba(255,255,255,.12); border-radius: 1rem; background: rgba(18,18,27,.7); box-shadow: none; backdrop-filter: blur(12px); }
-.feature-card:hover { border-color: rgba(243,201,105,.6); background: rgba(30,29,42,.9); box-shadow: 0 16px 34px rgba(0,0,0,.24); }
-.feature-icon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; margin: 0 auto 1.1rem; border-radius: .8rem; background: rgba(243,201,105,.12); font-size: 1.45rem; }
-.feature-card h3 { color: var(--cream); }
-.feature-card p { color: var(--muted); }
-
-.modal-overlay { padding: 1rem; background: rgba(5,5,9,.76); backdrop-filter: blur(12px); }
-.modal2 { max-height: calc(100vh - 2rem); overflow-y: auto; border: 1px solid rgba(243,201,105,.55); border-radius: 1rem; padding: 2rem; background: linear-gradient(145deg, #242132, #12121c); box-shadow: 0 24px 80px rgba(0,0,0,.65); }
-.modal2 h2 { color: var(--cream); }
-.form-group { margin-bottom: 1rem; }
-.form-group label { color: #ddd5e8; }
-.form-group input { box-sizing: border-box; border-color: rgba(255,255,255,.16); border-radius: .55rem; background: rgba(0,0,0,.24); }
-.form-group input:focus { border-color: var(--gold); }
-.image-upload-label { border-color: rgba(243,201,105,.45); border-radius: .55rem; color: var(--gold); }
-.modal-footer, .modal2-footer { text-align: center; color: var(--muted); }
-.erro { color: #ff9393; }
-
-@media (max-width: 800px) {
-  .hero-section, .hero-content { min-height: 760px; }
-  .hero-content { padding: 7rem 1.5rem 5rem; }
-  .hero-text { width: 100%; align-items: flex-start; text-align: left; }
-  .hero-dragon { display: flex; position: absolute; z-index: -1; right: -4rem; bottom: 5rem; width: 45%; opacity: .4; }
-  .hero-dragon img { min-width: 0; }
-  .journey-container { grid-template-columns: 1fr; gap: 2rem; }
-}
-
-@media (max-width: 600px) {
-  .hero-section, .hero-content { min-height: 700px; }
-  .hero-content { padding: 6.5rem 1.25rem 4rem; }
-  .hero-trust { display: grid; gap: .45rem; }
-  .hero-dragon { display: none; }
-  .auth-buttons { width: 100%; }
-  .auth-buttons .btn { width: auto; flex: 1; padding-inline: .75rem; }
-  .recent-tables-section, .journey-section, .features-section { padding: 4rem 1.1rem; }
-  .journey-step { grid-template-columns: 2.5rem 1fr; }
-  .table-image { height: 180px; }
-}
 .fade-to-black {
   position: absolute;
   bottom: 0;
