@@ -4,6 +4,8 @@ import api from '../services/api'
 import axios from 'axios'
 import {useAuthStore} from '@/stores/auth.js'
 import { useRouter } from 'vue-router'
+import { useMensagensStore } from '@/stores/DmStore.js'
+const mensagensStore = useMensagensStore()
 const user = ref(null)
 const createdTables = ref([])
 const participatingTables = ref([])
@@ -16,9 +18,9 @@ const router = useRouter()
 const createTableForm = ref({
   name: '',
   system: '',
+  description: '',
   mode: 'online',
-  image: null,
-  imagePreview: ''
+  image: null
 })
 const createTableError = ref('')
 
@@ -49,9 +51,9 @@ function closeCreateTableModal() {
   createTableForm.value = {
     name: '',
     system: '',
+    description: '',
     mode: 'online',
-    image: null,
-    imagePreview: ''
+    image: null
   }
 }
 function entraMesa(mesa) {
@@ -69,7 +71,6 @@ function handleCreateTableImageUpload(event) {
   if (!file) return
 
   createTableForm.value.image = file
-  createTableForm.value.imagePreview = URL.createObjectURL(file)
 }
 
 async function createTable() {
@@ -96,6 +97,7 @@ async function createTable() {
     const urlDaImagemFinal = cloudinaryRes.data.secure_url; 
     const nome  = createTableForm.value.name.trim();
     const sistema = createTableForm.value.system.trim();
+    const descricao = createTableForm.value.description.trim();
     const criador = user.value?.nome;
     const meio = createTableForm.value.mode;
 
@@ -104,6 +106,7 @@ async function createTable() {
       let res = await api.post('http://localhost:8080/dxguild/mesa', {
         nome: nome,
         sistema: sistema,
+        descricao: descricao,
         criador: criador,
         meio: meio,
         imagem: urlDaImagemFinal,
@@ -186,7 +189,7 @@ onMounted(() => {
       </div>
       <div class="header-actions">
         <button class="btn-secondary" @click="showCreateTableModal = true">Criar Mesa</button>
-        <router-link to="/mesas" class="btn-link">
+        <router-link to="/buscar" class="btn-link">
           <span class="search-icon">🔍</span>
           Encontrar Mesas
         </router-link>
@@ -263,6 +266,16 @@ onMounted(() => {
           </div>
 
           <div class="form-group">
+            <label for="table-description">Descrição da Mesa</label>
+            <textarea
+              id="table-description"
+              v-model="createTableForm.description"
+              placeholder="Conte um pouco sobre a aventura e o estilo da mesa"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
             <label for="table-mode">Meio</label>
             <select id="table-mode" v-model="createTableForm.mode">
               <option value="online">Online</option>
@@ -275,10 +288,9 @@ onMounted(() => {
             <div class="image-upload-section">
               <input id="table-image" type="file" accept="image/*" @change="handleCreateTableImageUpload" class="image-input" />
               <label for="table-image" class="image-upload-label">
-                <span v-if="!createTableForm.imagePreview">📷 Escolher Imagem</span>
+                <span v-if="!createTableForm.image">📷 Escolher Imagem</span>
                 <span v-else>✓ Imagem selecionada</span>
               </label>
-              <img v-if="createTableForm.imagePreview" :src="createTableForm.imagePreview" alt="Pré-visualização da mesa" class="preview-image" />
             </div>
           </div>
 
@@ -450,12 +462,18 @@ onMounted(() => {
   font-size: 0.95rem;
 }
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   padding: 0.7rem 0.8rem;
   border-radius: 8px;
   border: 1px solid rgba(212,175,55,0.2);
   background: rgba(0,0,0,0.45);
   color: #f5e9d0;
+}
+.form-group textarea {
+  min-height: 6rem;
+  resize: vertical;
+  font: inherit;
 }
 .image-upload-section {
   display: flex;
@@ -474,13 +492,6 @@ onMounted(() => {
   border: 1px dashed rgba(212,175,55,0.35);
   color: #f0e6b8;
   cursor: pointer;
-}
-.preview-image {
-  width: 100%;
-  max-height: 180px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid rgba(212,175,55,0.2);
 }
 .btn-submit {
   width: 100%;

@@ -1,9 +1,32 @@
 <script setup>
 import NavBar from '@/components/NavBar.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.js'
+import { useMensagensStore } from '@/stores/DmStore.js'
+import { watch } from 'vue'
+import { onUnmounted } from 'vue'
+const route = useRoute()
+const authStore = useAuthStore()
+const mensagensStore = useMensagensStore()
+
+const useAuthenticatedNav = computed(() => (
+  Boolean(authStore.Navcontroller) &&
+  (route.path === '/perfil' || route.path === '/buscar' || route.path.startsWith('/mesa/'))
+))
+
+watch(() => authStore.Navcontroller, (isLogged) => {
+  if (isLogged) {
+    mensagensStore.carregarMensagens();
+    mensagensStore.conexao();
+  } else {
+    mensagensStore.desconectar();
+  }
+}, { immediate: true });
 </script>
 
 <template>
-  <NavBar />
+  <NavBar :authenticated-nav="useAuthenticatedNav" />
   <main class="main-content">
     <router-view />
   </main>

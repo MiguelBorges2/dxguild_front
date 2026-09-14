@@ -4,8 +4,9 @@ import { defineStore } from 'pinia'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || null)
   const refresh = ref(localStorage.getItem('refresh') || null)
- const user = ref(localStorage.getItem('chat_nome') || null);
-    const imagem = ref(localStorage.getItem('chat_imagem') || null);
+  const Navcontroller = ref(Boolean(token.value))
+  const user = ref(localStorage.getItem('chat_nome') || null);
+  const imagem = ref(localStorage.getItem('chat_imagem') || null);
   function setUser(newUser) {
     user.value = newUser
   }
@@ -26,6 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     };
   function setToken(newToken, newRefresh) {
     token.value = newToken
+    Navcontroller.value = Boolean(newToken)
     if (newToken) {
       localStorage.setItem('token', newToken)
     } else {
@@ -43,6 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function clearToken() {
     token.value = null
+    Navcontroller.value = false
     localStorage.removeItem('token')
     refresh.value = null
     localStorage.removeItem('refresh')
@@ -54,5 +57,5 @@ export const useAuthStore = defineStore('auth', () => {
   function getRefresh(){
     return refresh.value
   }
-  return { token, refresh, setToken, clearToken, getToken, getRefresh, getUser, setUser, getImagem, setUsuario }
+  return { token, refresh, Navcontroller, setToken, clearToken, getToken, getRefresh, getUser, setUser, getImagem, setUsuario }
 })

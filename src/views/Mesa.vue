@@ -23,7 +23,7 @@ const mesaInfo = ref({
   imagem: '',
   vaga: true
 })
-
+const arquivosRaizes = ref([])
 const mesa = computed(() => ({
   id: mesaInfo.value.id || route.params.id,
   nome: mesaInfo.value.nome,
@@ -36,6 +36,7 @@ const mesa = computed(() => ({
 }))
 
 const mensagens = ref([])
+const imagemExpandida = ref(null)
 const jogadores = ref([
 
 
@@ -54,14 +55,13 @@ const novoJogador = ref('')
 const fichaLiberada = ref(false)
 const jogadorFicha = ref('')
 const avisoMestre = ref('')
+const fichasJogadores = ref({})
 const activeMasterTab = ref('players')
+const raizes = ref([])
 const arquivosMesa = ref([
 
 ])
-  async function calculaPad( pasta){
-    return  (((meuMapa[pasta.nome]) + 1) * 6)
-    
-  }
+const erroJogador = ref('')
   async function inserearquivo(){
     console.log('podeVer:', podeVer.value)
     try { 
@@ -76,8 +76,25 @@ const arquivosMesa = ref([
       )
 
       const nomeArq = prompt('Digite o nome do arquivo:')
-    const url =  cloudinaryRes.data.secure_url
-
+      const url =  cloudinaryRes.data.secure_url
+      if(itemSelecionado.value == null){
+        const res = await api.post(`http://localhost:8080/dxguild/arquivo/raiz`, {
+          nome: nomeArq,
+          mesa: mesa.value.nome,
+          arquivo: url,
+          perm: podeVer.value,
+        })
+        arquivosRaizes.value.push(res.data)
+         stompClient.value.publish({
+              destination: `/app/mesas/arquivo/${route.params.nome}`, 
+              body: JSON.stringify({
+              criador: authStore.getUser(),
+              arquivo: res.data,
+              tipo: 'arquivo',
+             })
+          });
+        return
+      }
       const res = await api.post(`http://localhost:8080/dxguild/arquivo`, {
         nome: nomeArq,
         mesa: mesa.value.nome,
@@ -91,8 +108,7 @@ const arquivosMesa = ref([
        pastas.value[index].arquivos.push(res.data)
       if(mapaArquivos.value.get(itemSelecionado.value) == false){
         ramifica(itemSelecionado.value)  
-       }
-      stompClient.value.publish({
+       }      stompClient.value.publish({
               destination: `/app/mesas/arquivo/${route.params.nome}`, 
               body: JSON.stringify({
               criador: authStore.getUser(),
@@ -107,11 +123,13 @@ const arquivosMesa = ref([
       throw error
     }
   }
+  
   async function adicionarJogador() {
   console.log('Adicionando jogador:', mesa.value.id)
     try{
+      erroJogador.value = ''
       const res = await api.post(`http://localhost:8080/dxguild/mesa/usuario/adicionar`, {
-        idMesa: mesa.value.id,
+        mesa: mesa.value.nome,
         nick: novoJogador.value
 
       })
@@ -121,8 +139,47 @@ const arquivosMesa = ref([
 
     } catch (e) {
       console.error('Erro ao adicionar jogador:', e);
+      if(e.response.status == 404){
+        erroJogador.value = 'Jogador não encontrado.'
+        return
+      }
+      if(e.response.status == 409){
+        erroJogador.value = 'Jogador já está na mesa.'
+        return
+      }
+      erroJogador.value = 'Erro ao adicionar jogador.'
+
     }
 } 
+
+function estadoFicha(jogador) {
+  const nome = (jogador || '').trim()
+  if (!nome) return 'sem-ficha'
+  return fichasJogadores.value[nome] || 'sem-ficha'
+}
+
+function textoFicha(jogador) {
+  const nome = (jogador || '').trim()
+  if (!nome) return 'Fichas não disponíveis.'
+
+  const estado = estadoFicha(nome)
+  if (estado === 'criada') return `Ficha criada para ${nome}.`
+  if (estado === 'pegou') return `${nome} pegou a ficha.`
+  return `A ficha de ${nome} ainda não foi criada.`
+}
+
+function pegarFicha(jogador) {
+  const nome = (jogador || '').trim()
+  if (!nome) {
+    avisoMestre.value = 'Selecione um jogador para pegar a ficha.'
+    return
+  }
+
+  fichasJogadores.value[nome] = 'pegou'
+  jogadorFicha.value = nome
+  fichaLiberada.value = true
+  avisoMestre.value = `${nome} pegou a ficha.`
+}
 
 function liberarFicha(jogador = jogadorFicha.value) {
   const nome = jogador?.trim?.() || ''
@@ -131,10 +188,12 @@ function liberarFicha(jogador = jogadorFicha.value) {
     return
   }
 
-  fichaLiberada.value = true
+  fichasJogadores.value[nome] = 'pegou'
   jogadorFicha.value = nome
+  fichaLiberada.value = true
   avisoMestre.value = `A ficha foi liberada para ${nome}.`
 }
+
 function pegaArquivo(event){
   arquivoSelecionado.value = event.target.files[0]
   inserearquivo()
@@ -229,6 +288,8 @@ const enviarImagem = async () => {
     console.error('Erro ao enviar mensagem:', e)
   }
 }
+var page = 0
+
 onMounted(async () => {
     try {
         const nomeMesa = encodeURIComponent(route.params.nome || route.params.id || '')
@@ -237,10 +298,15 @@ onMounted(async () => {
         pastas.value.forEach(pasta => {
             mapaArquivos.value.set(pasta.nome, false)
             meuMapa.value[pasta.nome] = -1
+            raizes.value.push(pasta.nome)
           
         }
 
         )
+        const arquivosRaiz = res.data.arquivosRaizes
+        arquivosRaiz.forEach(arquivo => {
+           arquivosRaizes.value.push(arquivo  )
+        })
         console.log(mapaArquivos.value.get("hahahahahaha"))
         const dadosMesa = res.data.mesa || {}
         const players = res.data.jogadores || []
@@ -283,7 +349,9 @@ onMounted(async () => {
         console.log('Dados da mesa:', dadosMesa, 'mestre:', mestre.value)
 
     } catch (error) {
-        console.error('Erro ao verificar se o usuário é mestre:', error);
+        if(error.response && error.response.status === 403) {
+            router.push('/')
+        } 
     }
    
     const socket = new SockJS('http://localhost:8080/dx-rpg');
@@ -298,13 +366,13 @@ onMounted(async () => {
                 console.log(dados)
                 if(dados.tipo === 'arquivo'){
                   if(dados.criador != authStore.getUser()){
-                     console.log("pastas", pastas.value)
-                      
+                     if(dados.pai){
+                        
                       alocaArquivo(dados.arquivo, pastas.value, dados.pai)
-                      console.log("a arvore inteira", pastas.value)
-                      
-                      
-                     
+                     }
+                     else{
+                      arquivosRaizes.value.push(dados.arquivo)
+                     }
                   }
                   return
                 }
@@ -312,24 +380,31 @@ onMounted(async () => {
                   if(dados.criador != authStore.getUser()){
                     const index = pastas.value.findIndex(pasta => pasta.nome === dados.pai);  
                     const pastaCriada = dados.node
-                    inserePasta(pastaCriada, pastas.value, dados.pai)
-                    console.log("OLHA A PASTA NOVA", pastaCriada)
-                    console.log("INDEX", index)
-                    console.log('Pasta criada:', pastaCriada)
-                    mapaArquivos.value.set(pastaCriada.nome, false)
-                    console.log("aqui oh" + pastas.value[index])
-                    if(!meuMapa.value[dados.pai]){
-                        meuMapa.value[dados.pai] = -1
+                    if(dados.raiz == true){
+                      pastas.value.push(pastaCriada)
+                       meuMapa.value[pastaCriada.nome] = -1
+                        mapaArquivos.value.set(pastaCriada.nome, false)
+                         return
                     }
+                    else{
+                      inserePasta(pastaCriada, pastas.value, dados.pai)
+                   
+                      console.log("aqui oh" + pastas.value[index])
+                      if(!meuMapa.value[dados.pai]){
+                        meuMapa.value[dados.pai] = -1
+                      }
 
                      
                       meuMapa.value[pastaCriada.nome] = meuMapa.value[dados.pai] + 2
                       if(mapaArquivos.value.get(dados.pai) == true){
                         pastas.value.splice(index+1, 0, dados.node)
                       }
-                    }
+                      return
+                      }
                 
-                    return
+                     
+                    }
+                  return 
                 }
                  
                 if(dados.tipo === 'ping') {
@@ -408,20 +483,24 @@ onMounted(async () => {
     
 });
 
-function alocaArquivo(arquivo, pasta, pai){
-    pasta.forEach(pasta => {
-      if(pasta.nome === pai){
-        pasta.arquivos.push(arquivo)
-        return
-      }else{
-        if(pasta.filhos){
-          alocaArquivo(arquivo, pasta.filhos, pai)
-        }
-        
+function alocaArquivo(arquivo, pastaOG, pai) {
+  for (const pasta of pastaOG) {
+    // Se encontrou a pasta correspondente
+    if (pasta.nome === pai) {
+      pasta.arquivos.push(arquivo);
+      return true; // Encontrou e inseriu: interrompe o loop e avisa a chamada anterior
+    }
+
+    // Se a pasta atual tem filhos, busca recursivamente neles
+    if (pasta.filhos && pasta.filhos.length > 0) {
+      const encontrado = alocaArquivo(arquivo, pasta.filhos, pai);
+      if (encontrado) {
+        return true; // Se achou nos filhos, interrompe a busca nos demais irmãos
       }
-     
-   }
-   ) 
+    }
+  }
+
+  return false; // Não encontrou nesta ramificação
 }
 function inserePasta(nome, pasta, pai){
   
@@ -436,17 +515,130 @@ function inserePasta(nome, pasta, pai){
         
       }
      
-   }
+    }
    ) 
 }
+const fileInput = ref(null)
+const uploadFichaInput = ref(null)
+const jogadorUploadSelecionado = ref('')
+import { nextTick } from 'vue';
 
+async function CarregaMais() {
+  try {
+    const isMobile = window.innerWidth < 900;
+    const chatContainer = document.getElementById('chat');
 
+    // 1. Captura a altura e posição do scroll ANTES de adicionar novas mensagens
+    let alturaAntiga = 0;
+    let scrollAtual = 0;
 
+    if (isMobile) {
+      // Quando < 900px, o scroll é na página inteira (document/body)
+      alturaAntiga = document.documentElement.scrollHeight;
+      scrollAtual = window.scrollY;
+    } else if (chatContainer) {
+      // Em telas maiores, o scroll é no elemento #chat
+      alturaAntiga = chatContainer.scrollHeight;
+      scrollAtual = chatContainer.scrollTop;
+    }
+
+    // 2. Busca os dados da API
+    page++;
+    const res = await api.get(`http://localhost:8080/dxguild/mesa/${mesa.value.nome}/mensagensPage/${page}`);
+    const chat = res.data || [];
+
+    // Se não houver novas mensagens, encerra para evitar processamento desnecessário
+    if (chat.length === 0) return;
+
+    // 3. Ordena e insere no início
+    const chatOrdenado = [...chat].sort((a, b) => new Date(a.dataEnvio) - new Date(b.dataEnvio));
+    mensagens.value.unshift(...chatOrdenado);
+
+    // 4. Aguarda a atualização do DOM pelo Vue
+    await nextTick();
+
+    // 5. Ajusta o scroll com base na diferença de altura
+    if (isMobile) {
+      const alturaNova = document.documentElement.scrollHeight;
+      const diferencaAltura = alturaNova - alturaAntiga;
+      
+      // Preserva a posição na página inteira
+      window.scrollTo({
+        top: scrollAtual + diferencaAltura,
+        behavior: 'instant' // Evita animações para que não haja tremor na tela
+      });
+    } else if (chatContainer) {
+      const alturaNova = chatContainer.scrollHeight;
+      const diferencaAltura = alturaNova - alturaAntiga;
+
+      // Preserva a posição dentro do painel do chat
+      chatContainer.scrollTop = scrollAtual + diferencaAltura;
+    }
+
+  } catch (e) {
+    console.log("Erro ao carregar mais mensagens:", e);
+  }
+}
+const nomeJogadorFicha = ref('')
+
+async function ficha(nome){
+    try{
+      nomeJogadorFicha.value = nome
+      console.log("entrou")
+        const mesaNome = mesa.value.nome
+        const res = await api(`http://localhost:8080/dxguild/mesa/ficha/${encodeURIComponent(mesaNome)}/${encodeURIComponent(nome)}`)
+        console.log("ficha" + res.data)
+        window.open(res.data.ficha, '_blank', 'noopener,noreferrer');
+    }catch(e){
+      console.log('erro ao pegar a ficha:', e)
+      if(e.response?.status == 404){
+        abrirUploadFicha(nome)
+      }
+    }
+  }
+
+const aoSelecionarArquivo = (event) => {
+  const arquivo = event.target.files[0];
+  if (arquivo) {
+    console.log("Arquivo selecionado:", arquivo);
+    criarFicha(arquivo)
+  }
+};
+
+function abrirUploadFicha(nome) {
+  jogadorUploadSelecionado.value = nome
+  uploadFichaInput.value?.click()
+}
+
+const aoSelecionarUploadFicha = (event) => {
+  const arquivo = event.target.files?.[0]
+  if (!arquivo) return
+
+  nomeJogadorFicha.value = jogadorUploadSelecionado.value
+  criarFicha(arquivo)
+  event.target.value = ''
+}
+
+async function criarFicha(arquivo){
+    try{
+      const url = await enviarParaCloudinary(arquivo);
+      const res = await api.post(`http://localhost:8080/dxguild/mesa/ficha`, {
+        ficha: url,
+        mesa: mesa.value.nome,
+        jogador: nomeJogadorFicha.value
+      })
+    }catch(e){
+       console.log("pepino na ficha",)
+    }
+    
+    
+}
 let scrollAtual = 0;
 
 // 1. Salva a posição antes de começar a mexer na tela
 
 const mensagem = ref('')
+const mostrarBotaoMensagensAntigas = ref(false)
 const dadosSelecionados = ref([])
 const bonusRolagem = ref(0)
 const painelMobile = ref(null)
@@ -462,6 +654,24 @@ const MenuVisivel = ref(false)
 const menuX = ref(0)
 const menuY = ref(0)
 const itemSelecionado = ref('')
+
+function abrirImagemExpandida(src) {
+  imagemExpandida.value = src
+}
+
+function fecharImagemExpandida() {
+  imagemExpandida.value = null
+}
+
+function lidarComTeclaImagem(event) {
+  if (event.key === 'Escape') {
+    fecharImagemExpandida()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', lidarComTeclaImagem))
+onUnmounted(() => window.removeEventListener('keydown', lidarComTeclaImagem))
+
 function abrirDiceModal() {
   diceModalOpen.value = true
 }
@@ -482,27 +692,31 @@ function abrirMenu(event, item) {
 
   
 }
+
 async function CriarPasta() {
   try {
+    var eraiz = false;
+    if(itemSelecionado.value == null){
+      eraiz = true
+    }
+    console.log(eraiz)
     const nomePasta = prompt('Digite o nome da nova pasta:')
     const res = await api.post(`http://localhost:8080/dxguild/pasta`, {
       nome: nomePasta,
       filhos: [],
       permitidos: [],
       mesa: mesa.value.nome,
-      pai: itemSelecionado.value
+      pai: itemSelecionado.value,
+      raiz: eraiz
     })
-    const pastaCriada = res.data
-    if(itemSelecionado.value != "raiz"){
+    const pastaCriada = res.data.node 
+    if(!res.data.raiz){
+        console.log("é razin sim")
         const index = pastas.value.findIndex(pasta => pasta.nome === itemSelecionado.value);
-        const pastaCriada = res.data
         console.log
         console.log('Pasta criada:', pastaCriada)
         mapaArquivos.value.set(pastaCriada.nome, false)
-        pastas.value[index].filhos.push(res.data)
-        console.log("CARALHO QUE SACO", mapaArquivos.value.get(itemSelecionado.value))
-       
-        console.log(pastas.value)
+        pastas.value[index].filhos.push(pastaCriada)
         
           if(!meuMapa.value[itemSelecionado.value]){
           meuMapa.value[itemSelecionado.value] = -1
@@ -511,7 +725,7 @@ async function CriarPasta() {
           
           meuMapa.value[pastaCriada.nome] = meuMapa.value[itemSelecionado.value] + 2
            if(mapaArquivos.value.get(itemSelecionado.value) == true){
-            pastas.value.splice(index+1, 0, res.data)
+            pastas.value.splice(index+1, 0, pastaCriada)
           }else{
             ramifica(itemSelecionado.value)
           }
@@ -519,21 +733,33 @@ async function CriarPasta() {
               destination: `/app/mesas/pasta/${route.params.nome}`, 
               body: JSON.stringify({
               criador: authStore.getUser(),
-              node: res.data,
+              node: pastaCriada,
               tipo: 'pasta',
-              pai: itemSelecionado.value  // Define o tipo da mensagem, padrão para 'texto'
+              pai: itemSelecionado.value,
+              raiz: false
              })
           });
         
         console.log('Criando pasta:', nomePasta)
     }else {
-         const pastaCriada = res.data
+          raizes.value.push(pastaCriada)
           meuMapa.value[pastaCriada.nome] = -1
-
+          mapaArquivos.value.set(pastaCriada.nome, false)
           console.log
           console.log('Pasta criada:', pastaCriada)
           pastas.value.splice(0, 0, pastaCriada)
           console.log(pastas.value)
+           stompClient.value.publish({
+              destination: `/app/mesas/pasta/${route.params.nome}`, 
+              body: JSON.stringify({
+              criador: authStore.getUser(),
+              node: pastaCriada,
+              tipo: 'pasta',
+              pai: 'raiz',
+              raiz: true  // Define o tipo da mensagem, padrão para 'texto'
+             })
+          });
+        
 
     }
    
@@ -545,6 +771,17 @@ onMounted(() => window.addEventListener('click', fecharMenu))
 onUnmounted(() => window.removeEventListener('click', fecharMenu))
 const fecharMenu = () => {
   MenuVisivel.value = false
+}
+
+const onChatMouseMove = (event) => {
+  const chatElement = event.currentTarget
+  const rect = chatElement.getBoundingClientRect()
+  const distanceFromTop = event.clientY - rect.top
+  mostrarBotaoMensagensAntigas.value = distanceFromTop <= 110
+}
+
+const onChatMouseLeave = () => {
+  mostrarBotaoMensagensAntigas.value = false
 }
 
 const acaoExibirItem = () => {
@@ -643,12 +880,11 @@ function ramifica(nome){
   }
   
   if(mapaArquivos.value.has(nome)){
-    if(mapaArquivos.value.get(nome) == true){
+    
      
-    }
-    else {
+  
       mapaArquivos.value.set(nome, true)
-    }
+ 
     
   }
   else{
@@ -692,6 +928,16 @@ function removerDado(indice) {
   dadosSelecionados.value.splice(indice, 1)
 }
 
+function alterarBonus(valor) {
+  const bonusAtual = Number(bonusRolagem.value) || 0
+  bonusRolagem.value = Math.max(-99, Math.min(99, bonusAtual + valor))
+}
+
+function limitarBonus() {
+  const bonusAtual = Number(bonusRolagem.value) || 0
+  bonusRolagem.value = Math.max(-99, Math.min(99, Math.trunc(bonusAtual)))
+}
+
 function rolarDados() {
   if (!dadosSelecionados.value.length || !stompClient.value?.connected) return
 
@@ -715,6 +961,13 @@ function rolarDados() {
 
 <template>
   <div class="mesa-page">
+    <input
+      ref="uploadFichaInput"
+      class="input-escondido"
+      type="file"
+      accept=".pdf,image/*"
+      @change="aoSelecionarUploadFicha"
+    />
     <header class="mesa-header">
       <div class="header-topbar">
         <div class="top-left">
@@ -771,11 +1024,19 @@ function rolarDados() {
     
     <!-- Grupo de arquivos dinâmico -->
     <div class="folder-group" >
-        <div class="folder" @contextmenu.prevent="abrirMenu($event, 'raiz')">🗂️ Documentos e Links</div>
+        <div class="folder" @contextmenu.prevent="abrirMenu($event, null)">🗂️ Documentos e Links</div>
           <!-- Menu de Contexto -->
           
             <ul class="file-list">
-            
+              <li v-for="arquivo in arquivosRaizes" class="lista" >
+                <div >
+              
+                    <img  src="../assets/imgs/pdficon.svg" height="20">
+                    <a :href="arquivo.link" target="_blank"><span>{{ arquivo.nome }}</span></a>
+                  
+                  
+                </div>
+              </li>
               <li v-for="pasta in pastas" class="lista"  @contextmenu.prevent="abrirMenu($event, pasta.nome)" >
                 <div :style="{ paddingLeft: (((meuMapa[pasta.nome]) + 1) * 6) + 'px'}">
                     <span  @click="ramifica(pasta.nome)" class="file-name" >-📁 {{ pasta.nome }}</span>
@@ -798,68 +1059,65 @@ function rolarDados() {
 
           <div class="master-tabs">
             <button class="master-tab" :class="{ active: activeMasterTab === 'players' }" @click="activeMasterTab = 'players'">Jogadores</button>
-            <button class="master-tab" :class="{ active: activeMasterTab === 'files' }" @click="activeMasterTab = 'files'">Arquivos</button>
           </div>
 
           <div v-if="activeMasterTab === 'players'" class="master-controls">
             <label class="master-label" for="player-name">Adicionar jogador</label>
-            <div class="input-row">
-              <input id="player-name" v-model="novoJogador" type="text" placeholder="Nome do jogador" @keyup.enter="adicionarJogador" />
-              <button type="button" class="small-btn" @click="adicionarJogador">Add</button>
+            <div class=" d-flex flex-column">
+              <div class="input-row">
+                <input id="player-name" v-model="novoJogador" type="text" placeholder="Nome do jogador" @keyup.enter="adicionarJogador" />
+                <button type="button" class="small-btn" @click="adicionarJogador">Add</button>
+              </div>
+              
+              <p class="error">{{ erroJogador }}</p>
             </div>
 
             <div class="players-box">
               <div class="players-box-title">Jogadores na mesa</div>
               <ul class="players-list">
-                <li v-for="jogador in jogadores" :key="jogador.nome" class="d-flex justify-content-between">
+                <li v-for="jogador in jogadores" :key="jogador.nome" class="player-ficha-row">
                   <span>{{ jogador.nome }} - Player</span>
-                  <button type="button" class="link-btn" @click="liberarFicha(jogador.nome)">
-                    {{ jogadorFicha === jogador.nome && fichaLiberada ? 'Liberada' : 'Liberar ficha' }}
-                  </button>
+                  <div class="ficha-actions-block ficha-actions-block--stacked">
+                    <button type="button" class="ficha-label ficha-master-btn" @click="ficha(jogador.nome)">
+                      <span class="ficha-button-icon" aria-hidden="true">✦</span>
+                      <span>Abrir ficha</span>
+                    </button>
+                    <button type="button" class="ficha-label ficha-upload-btn" @click="abrirUploadFicha(jogador.nome)">
+                      <span class="ficha-button-icon" aria-hidden="true">↑</span>
+                      <span>Enviar ficha</span>
+                    </button>
+                   
+                  </div>
                 </li>
+                <input ref="fileInput" id="ficha" class="input-escondido" type="file" @change="aoSelecionarArquivo">
               </ul>
             </div>
 
-            <div class="select-row">
-              <select v-model="jogadorFicha" class="player-select">
-                <option value="">Selecione um jogador</option>
-                <option v-for="jogador in jogadores" :key="jogador.nome" :value="jogador.nome">
-                  {{ jogador.nome }}
-                </option>
-              </select>
-              <button type="button" class="small-btn" @click="liberarFicha(jogadorFicha)">Liberar</button>
-            </div>
-
-            <button v-if="fichaLiberada" type="button" class="master-action-btn secondary" @click="recolherFicha">
-              Recolher ficha
-            </button>
-
-            <p class="helper-text">{{ avisoMestre || (fichaLiberada ? `A ficha está liberada para ${jogadorFicha}.` : 'Selecione um jogador para liberar a ficha.') }}</p>
+            <p class="helper-text">{{ avisoMestre || 'Controle as fichas dos jogadores da mesa.' }}</p>
           </div>
+        </section>
 
-          <div v-else class="master-controls">
-        
-            <div class="file-picker">
-              <button class="file-modal-trigger"  @click="abrirModalArquivo()"aria-label="Adicionar arquivo">
-                <svg class="file-modal-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-                  <path d="M12 15v-6m-5 3h10" fill="none" nestroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>Selecionar Arquivo</span>
-              </button>
-            </div>
+        <section v-else class="panel master-panel">
+          <div class="panel-title">Seu painel de ficha</div>
+          <p class="panel-subtitle">Gerencie sua ficha na mesa.</p>
 
-
+          <div class="master-controls">
             <div class="players-box">
-              <div class="players-box-title">Arquivos da mesa</div>
-              <ul class="players-list">
-                <li v-for="arquivo in arquivosMesa" :key="arquivo.nome">
-                  <span>{{ arquivo.nome }}</span>
-                  <span class="file-pill">{{ arquivo.tipo }}</span>
-                </li>
-              </ul>
+              <div class="players-box-title">{{ authStore.getUser() || 'Você' }}</div>
+              <div class="ficha-actions-block compact">
+         
+                <div class="player-ficha-actions compact">
+                  <button type="button" class="small-btn secondary ficha-action-btn" @click="ficha(authStore.getUser())">
+                    <span class="ficha-button-icon" aria-hidden="true">✦</span>
+                    <span>Minha ficha</span>
+                  </button>
+                  <input ref="fileInput" id="ficha" class="input-escondido" type="file" @change="aoSelecionarArquivo">
+                </div>
+              </div>
             </div>
+
+            <p class="helper-text">{{ textoFicha(authStore.getUser()) || avisoMestre }}</p>
           </div>
-        
         </section>
 
         <section class="panel">
@@ -904,104 +1162,164 @@ function rolarDados() {
                 <span class="meta-chip">Criador: {{ mesa.mestre }}</span>
               </div>
             </section>
+                <section class="panel">
+    <div class="panel-title">Arquivos</div>
+    
+    <!-- Grupo de arquivos dinâmico -->
+    <div class="folder-group" >
+        <div class="folder" @contextmenu.prevent="abrirMenu($event, null)">🗂️ Documentos e Links</div>
+          <!-- Menu de Contexto -->
+          
+            <ul class="file-list">
+              <li v-for="arquivo in arquivosRaizes" class="lista" >
+                <div >
+              
+                    <img  src="../assets/imgs/pdficon.svg" height="20">
+                    <a :href="arquivo.link" target="_blank"><span>{{ arquivo.nome }}</span></a>
+                  
+                  
+                </div>
+              </li>
+              <li v-for="pasta in pastas" class="lista"  @contextmenu.prevent="abrirMenu($event, pasta.nome)" >
+                <div :style="{ paddingLeft: (((meuMapa[pasta.nome]) + 1) * 6) + 'px'}">
+                    <span  @click="ramifica(pasta.nome)" class="file-name" >-📁 {{ pasta.nome }}</span>
+                </div> 
+                <div v-if="mapaArquivos.get(pasta.nome) === true" >
+                  <div v-for="arquivo in pasta.arquivos" class="lista" :style="{ paddingLeft: ((meuMapa[pasta.nome] + 4) * 6) + 'px' }" >
+                    <img  src="../assets/imgs/pdficon.svg" height="20">
+                    <a :href="arquivo.link" target="_blank"><span>{{ arquivo.nome }}</span></a>
+                  </div>
+                  
+                </div>
+              </li>
+              </ul>
+            </div>
+          </section>
+            <section v-if="painelMobile === 'files'" class="panel mobile-file-panel">
+              <div class="panel-title">Arquivos</div>
 
-            <section class="panel">
-              <div class="panel-title">Arquivos & Painel do Mestre</div>
+              <div v-if="mestre" class="mobile-file-tools">
+                <button type="button" class="mobile-upload-trigger" @click.prevent="abrirModalArquivo">
+                  <svg class="mobile-upload-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                    <defs>
+                      <linearGradient id="upload-gold" x1="0%" x2="100%" y1="0%" y2="100%">
+                        <stop offset="0%" stop-color="#f7e7b9" />
+                        <stop offset="100%" stop-color="#d4af37" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 15V4m0 0 4 4m-4-4-4 4" fill="none" stroke="url(#upload-gold)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 15.5v3.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3.5" fill="none" stroke="url(#upload-gold)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="mobile-upload-label">Adicionar arquivo</span>
+                </button>
+              </div>
+
+              <div v-if="modalArquivoAberto" class="file-modal-overlay" @click.self="fecharModalArquivo">
+                <div class="file-modal" role="dialog" aria-modal="true" aria-label="Adicionar arquivo à mesa">
+                  <div class="file-modal-header">
+                    <h4>Adicionar arquivo</h4>
+                    <button type="button" class="ghost-btn" @click="fecharModalArquivo">✕</button>
+                  </div>
+
+                  <div class="file-modal-body">
+                    <label class="file-modal-trigger" for="mobile-file-upload-modal">Escolher arquivo</label>
+                    <input id="mobile-file-upload-modal" type="file" class="input-escondido" @change="handleArquivoSelecionado" />
+
+                    <div v-if="arquivoSelecionado" class="file-modal-selected">
+                      <span class="file-modal-label">Arquivo:</span>
+                      <strong>{{ arquivoSelecionado.name }}</strong>
+                    </div>
+
+                    <label class="file-modal-field-label" for="arquivo-nome-custom">Nome do arquivo</label>
+                    <input id="arquivo-nome-custom" v-model="nomeArquivoCustom" type="text" class="file-modal-input" placeholder="Ex.: Mapa da vila" />
+                  </div>
+
+                  <div class="file-modal-actions">
+                    <button type="button" class="secondary-btn" @click="fecharModalArquivo">Cancelar</button>
+                    <button type="button" class="primary-btn" @click="confirmarArquivoModal">OK</button>
+                  </div>
+                </div>
+              </div>
+
+            </section>
+
+            <section v-else class="panel">
+              <div class="panel-title" v-if="mestre">Painel do Mestre</div>
+              <div class="panel-title" v-else>Seu painel de ficha</div>
+              
+            <label class="master-label" for="player-name">Adicionar jogador</label>
+            <div class=" d-flex flex-column">
+              <div class="input-row">
+                <input id="player-name" v-model="novoJogador" type="text" placeholder="Nome do jogador" @keyup.enter="adicionarJogador" />
+                <button type="button" class="small-btn" @click="adicionarJogador">Add</button>
+              </div>
+              
+              <p class="error">{{ erroJogador }}</p>
+            </div>  
+            
+            <div class="players-box">
+              <div class="players-box-title">Jogadores na mesa</div>
+              <ul class="players-list">
+                <li v-for="jogador in jogadores" :key="jogador.nome" class="player-ficha-row">
+                  <span>{{ jogador.nome }} - Player</span>
+                  <div class="ficha-actions-block ficha-actions-block--stacked">
+                    <button type="button" class="ficha-label ficha-master-btn" @click="ficha(jogador.nome)">
+                      <span class="ficha-button-icon" aria-hidden="true">✦</span>
+                      <span>Abrir ficha</span>
+                    </button>
+                    <button type="button" class="ficha-label ficha-upload-btn" @click="abrirUploadFicha(jogador.nome)">
+                      <span class="ficha-button-icon" aria-hidden="true">↑</span>
+                      <span>Enviar ficha</span>
+                    </button>
+                   
+                  </div>
+                </li>
+                <input ref="fileInput" id="ficha" class="input-escondido" type="file" @change="aoSelecionarArquivo">
+              </ul>
+            </div>
 
               <div v-if="mestre" class="master-controls">
                 <div class="master-tabs">
                   <button class="master-tab" :class="{ active: activeMasterTab === 'players' }" @click="activeMasterTab = 'players'">Jogadores</button>
-                  <button class="master-tab" :class="{ active: activeMasterTab === 'files' }" @click="activeMasterTab = 'files'">Arquivos</button>
                 </div>
 
-                <div v-if="activeMasterTab === 'players'">
-                  <label class="master-label" for="mobile-player-name">Adicionar jogador</label>
-                  <div class="input-row">
-                    <input id="mobile-player-name" v-model="novoJogador" type="text" placeholder="Nome do jogador" @keyup.enter="adicionarJogador" />
-                    <button type="button" class="small-btn" @click="adicionarJogador">Add</button>
-                  </div>
-
-                  <div class="players-box">
-                    <div class="players-box-title">Jogadores na mesa</div>
-                    <ul class="players-list">
-                      <li v-for="jogador in jogadores" :key="jogador.nome" class="d-flex justify-content-center">
-                        <span>{{ jogador.nome }} - Player</span>
-                        <button type="button" class="link-btn" @click="liberarFicha(jogador.nome)">
-                          {{ jogadorFicha === jogador.nome && fichaLiberada ? 'Liberada' : 'Liberar ficha' }}
+                <div class="players-box  d-flex flex-column">
+                  <div class="players-box-title">Jogadores na mesa</div>
+                  <ul class="players-list flex-grow">
+                    <li v-for="jogador in jogadores"  :key ="jogador.nome" class="player-ficha-row">
+                      <span>{{ jogador.nome }} - Player</span>
+                      <div class="ficha-actions-block">
+                        <button type="button" class="ficha-label ficha-master-btn" @click="ficha(jogador.nome)">
+                          <span class="ficha-button-icon" aria-hidden="true">✦</span>
+                          <span>Abrir ficha</span>
                         </button>
-                      </li>
-                    </ul>
-                  </div>
+                        <button type="button" class="ficha-label ficha-upload-btn" @click="abrirUploadFicha(jogador.nome)">
+                          <span class="ficha-button-icon" aria-hidden="true">↑</span>
+                          <span>Enviar ficha</span>
+                        </button>
 
-                  <div class="select-row">
-                    <select v-model="jogadorFicha" class="player-select">
-                      <option value="">Selecione um jogador</option>
-                      <option v-for="jogador in jogadores" :key="jogador.nome" :value="jogador.nome">
-                        {{ jogador.nome }}
-                      </option>
-                    </select>
-                    <button type="button" class="small-btn" @click="liberarFicha(jogadorFicha)">Liberar</button>
-                  </div>
-
-                  <button v-if="fichaLiberada" type="button" class="master-action-btn secondary" @click="recolherFicha">
-                    Recolher ficha
-                  </button>
+                      </div>
+                    </li>
+                      <input ref="fileInput" id="ficha" class="input-escondido" type="file" @change="aoSelecionarArquivo">
+                  </ul>
                 </div>
 
-                <div v-else>
-                  <label class="mobile-upload-trigger" aria-label="Adicionar arquivo" @click.prevent="abrirModalArquivo">
-                    <svg class="mobile-upload-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                      <defs>
-                        <linearGradient id="upload-gold" x1="0%" x2="100%" y1="0%" y2="100%">
-                          <stop offset="0%" stop-color="#f7e7b9" />
-                          <stop offset="100%" stop-color="#d4af37" />
-                        </linearGradient>
-                      </defs>
-                      <path d="M12 15V4m0 0 4 4m-4-4-4 4" fill="none" stroke="url(#upload-gold)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M4 15.5v3.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3.5" fill="none" stroke="url(#upload-gold)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="mobile-upload-label">Arquivo</span>
-                  </label>
+                <p class="helper-text">{{ avisoMestre || 'Controle as fichas dos jogadores da mesa.' }}</p>
+              </div>
 
-                  <div v-if="modalArquivoAberto" class="file-modal-overlay" @click.self="fecharModalArquivo">
-                    <div class="file-modal" role="dialog" aria-modal="true" aria-label="Adicionar arquivo à mesa">
-                      <div class="file-modal-header">
-                        <h4>Adicionar arquivo</h4>
-                        <button type="button" class="ghost-btn" @click="fecharModalArquivo">✕</button>
-                      </div>
-
-                      <div class="file-modal-body">
-                        <label class="file-modal-trigger" for="mobile-file-upload-modal">Escolher arquivo</label>
-                        <input id="mobile-file-upload-modal" type="file" class="input-escondido" @change="handleArquivoSelecionado" />
-
-                        <div v-if="arquivoSelecionado" class="file-modal-selected">
-                          <span class="file-modal-label">Arquivo:</span>
-                          <strong>{{ arquivoSelecionado.name }}</strong>
-                        </div>
-
-                        <label class="file-modal-field-label" for="arquivo-nome-custom">Nome do arquivo</label>
-                        <input id="arquivo-nome-custom" v-model="nomeArquivoCustom" type="text" class="file-modal-input" placeholder="Ex.: Mapa da vila" />
-                      </div>
-
-                      <div class="file-modal-actions">
-                        <button type="button" class="secondary-btn" @click="fecharModalArquivo">Cancelar</button>
-                        <button type="button" class="primary-btn" @click="confirmarArquivoModal">OK</button>
-                      </div>
+              <div v-else class="master-controls">
+                <div class="players-box">
+                  <div class="players-box-title">{{ authStore.getUser() || 'Você' }}</div>
+                  <div class="ficha-actions-block player-ficha-block compact">
+                    <span class="ficha-section-label">Sua ficha</span>
+                    <div class="player-ficha-actions compact">
+                      <button type="button" class="small-btn ficha-action-btn" @click="criarFicha(authStore.getUser())">Criar</button>
+                      <button type="button" class="small-btn secondary ficha-action-btn" @click="pegarFicha(authStore.getUser())">Baixar</button>
                     </div>
                   </div>
-
-                  <div class="players-box">
-                    <div class="players-box-title">Arquivos da mesa</div>
-                    <ul class="players-list">
-                      <li v-for="arquivo in arquivosMesa" :key="arquivo.nome">
-                        <span>{{ arquivo.nome }}</span>
-                        <span class="file-pill">{{ arquivo.tipo }}</span>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
 
-                <p class="helper-text">{{ avisoMestre || (fichaLiberada ? 'A ficha já está liberada para o grupo.' : 'As fichas permanecem restritas até você liberar.') }}</p>
+                <p class="helper-text">{{ textoFicha(authStore.getUser()) || avisoMestre }}</p>
               </div>
             </section>
 
@@ -1036,7 +1354,25 @@ function rolarDados() {
       <section    class="chat-panel">
         <div class="messages">
           <div class="messages-backdrop" :style="chatBackgroundStyle"></div>
-          <div id="chat" class="messages-content">
+          <div
+             
+            id="chat"
+            class="messages-content"
+            @mousemove="onChatMouseMove"
+            @mouseleave="onChatMouseLeave"
+          >
+            <div 
+              @click="CarregaMais()"
+              class="oldest-scroll-indicator"
+              :class="{ visible: mostrarBotaoMensagensAntigas }"
+              aria-hidden="true"
+              tabindex="-1"
+            >
+              <svg  class="oldest-scroll-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 6v12" />
+                <path d="m6 12 6-6 6 6" />
+              </svg>
+          </div>
             <div v-for="msg in mensagens" :key="msg.id" class="message-item  d-flex justify-content-start align-items-center">
               <img :src="msg.image" alt="Avatar" class="rounded-circle me-2" width="40" height="40">
               <div class="w-100">
@@ -1050,6 +1386,11 @@ function rolarDados() {
                   :src="msg.message ?? msg.input ?? msg.mensagem"
                   alt="Imagem enviada no chat"
                   class="message-image"
+                  tabindex="0"
+                  role="button"
+                  @click="abrirImagemExpandida(msg.message ?? msg.input ?? msg.mensagem)"
+                  @keydown.enter="abrirImagemExpandida(msg.message ?? msg.input ?? msg.mensagem)"
+                  @keydown.space.prevent="abrirImagemExpandida(msg.message ?? msg.input ?? msg.mensagem)"
                 />
                 <div v-else-if="msg.tipo === 'rolagem'" class="roll-message">
                   <span class="roll-message-icon" aria-hidden="true">
@@ -1089,18 +1430,11 @@ function rolarDados() {
               </svg>
             </button>
 
-            <!-- compact indicator of selected dice; still clickable to open modal -->
-            <div v-if="dadosSelecionados.length" class="roll-preview" @click="abrirDiceModal" aria-hidden="false">
-              <div class="selected-dice-inline">
-                <span v-for="(lados, idx) in dadosSelecionados" :key="`${lados}-${idx}`" class="selected-die-inline">d{{ lados }}</span>
-              </div>
-              <span class="bonus-preview" v-if="bonusRolagem">+{{ bonusRolagem }}</span>
-            </div>
           </div>
 
-          <!-- Dice modal (desktop centered, mobile full screen) -->
-          <div v-if="diceModalOpen" class="dice-modal-overlay" @click.self="fecharDiceModal">
-            <div class="dice-modal" role="dialog" aria-modal="true" aria-label="Rolagem de dados">
+          <Teleport to="body">
+            <div v-if="diceModalOpen" class="dice-modal-overlay" @click.self="fecharDiceModal">
+              <div class="dice-modal" role="dialog" aria-modal="true" aria-label="Rolagem de dados">
               <div class="dice-modal-header">
                 <h4>Escolher dados</h4>
                 <button type="button" class="ghost-btn" @click="fecharDiceModal">✕</button>
@@ -1108,23 +1442,38 @@ function rolarDados() {
 
               <div class="dice-modal-body">
                 <div class="dice-options">
-                  <button type="button" class="dice-option" @click="adicionarDado(4)"><span class="dice-shape d4">△</span>d4</button>
-                  <button type="button" class="dice-option" @click="adicionarDado(6)"><span class="dice-shape d6">⬡</span>d6</button>
-                  <button type="button" class="dice-option" @click="adicionarDado(8)"><span class="dice-shape d8">◆</span>d8</button>
-                  <button type="button" class="dice-option" @click="adicionarDado(10)"><span class="dice-shape d10">⬟</span>d10</button>
-                  <button type="button" class="dice-option" @click="adicionarDado(100)"><span class="dice-shape d100">◈</span>d100</button>
+                  <div v-for="lados in [4, 6, 8, 10, 12, 20, 100]" :key="lados" class="dice-option">
+                    <span class="dice-shape" :class="`d${lados}`">d{{ lados }}</span>
+                    <div class="dice-counter">
+                      <button type="button" class="counter-button" :aria-label="`Remover d${lados}`" :disabled="!dadosSelecionados.filter((dado) => dado === lados).length" @click="removerDado(dadosSelecionados.lastIndexOf(lados))">-</button>
+                      <span class="dice-count">{{ dadosSelecionados.filter((dado) => dado === lados).length }}</span>
+                      <button type="button" class="counter-button" :aria-label="`Adicionar d${lados}`" @click="adicionarDado(lados)">+</button>
+                      </div>
+                    </div>
                 </div>
 
                 <div class="roll-builder modal-roll-builder" aria-label="Dados selecionados">
                   <div class="roll-builder-title">Rolagem</div>
-                  <div class="selected-dice">
-                    <button v-for="(lados, indice) in dadosSelecionados" :key="`${lados}-${indice}`" type="button" class="selected-die" :title="`Remover d${lados}`" @click="removerDado(indice)">
-                      {{ lados }} <span aria-hidden="true">×</span>
-                    </button>
+                  <div class="roll-summary" aria-live="polite">
+                    <template v-for="(lados, indice) in [4, 6, 8, 10, 12, 20, 100]" :key="lados">
+                      <span v-if="dadosSelecionados.filter((dado) => dado === lados).length" class="summary-part">
+                        <span v-if="indice > 0 && dadosSelecionados.filter((dado) => dado < lados).length"> + </span>{{ dadosSelecionados.filter((dado) => dado === lados).length }}d{{ lados }}
+                      </span>
+                    </template>
+                    <span v-if="!dadosSelecionados.length" class="summary-empty">Nenhum dado selecionado</span>
                   </div>
 
-                  <label class="roll-bonus">Bônus <input v-model.number="bonusRolagem" type="number" step="1" aria-label="Bônus da rolagem" /></label>
                 </div>
+              </div>
+
+              <div class="roll-bonus">
+                <span class="roll-bonus-label">Modificador</span>
+                <div class="bonus-controls">
+                  <button type="button" class="counter-button" aria-label="Diminuir modificador" @click="alterarBonus(-1)">-</button>
+                  <input v-model.number="bonusRolagem" type="number" min="-99" max="99" step="1" aria-label="Modificador da rolagem" @change="limitarBonus" />
+                  <button type="button" class="counter-button" aria-label="Aumentar modificador" @click="alterarBonus(1)">+</button>
+                </div>
+                <output class="bonus-formatted" aria-live="polite">{{ bonusRolagem >= 0 ? '+' : '' }}{{ bonusRolagem || 0 }}</output>
               </div>
 
               <div class="dice-modal-actions">
@@ -1133,58 +1482,16 @@ function rolarDados() {
               </div>
             </div>
           </div>
+          </Teleport>
           <input v-model="mensagem" type="text" placeholder="Escreva uma mensagem..." />
-          <button type="submit">Enviar</button>
+          <button type="submit" class="composer-send-btn">
+            <span>Enviar</span>
+            <span class="send-button-icon" aria-hidden="true">➤</span>
+          </button>
         </form>
       </section>
     </div>
-    <dialog id="modal2"  >
-      <div class="arquivo-modal ">
-        <h2 class="panel-title">Inserir Arquivo</h2>
-        <div class="inputs">
-           <label class="file-modal-field-label" for="arquivo-nome-custom">Nome do arquivo</label>
-            <input id="arquivo-nome-custom" v-model="nomeArquivoCustom" type="text" class="file-modal-input" placeholder="Ex.: Mapa da vila" />
-            <label class="file-custom-button" for="arquivo-Link-custom">
-              <!-- Ícone SVG de Download -->
-              <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              
-              <span>Escolher Arquivo</span>
-              
-            </label>
-            <input id="arquivo-Link-custom"  type="file" class="input-escondido" @change="pegaArquivo" placeholder="Ex.: https://example.com/arquivo.pdf" />
-            <div class="box-jogadores-container">
-            <label class="panel-title" for="lista-jogadores">Quem pode ver o arquivo?</label>
-            <div 
-            v-for="jogador in jogadores" 
-            :key="jogador.id"
-            class="jogador-checkbox-card"
-            id="lista-jogadores"
-          >
-            <input 
-              type="checkbox" 
-              :id="`jogador-${jogador.id}`" 
-              :value="jogador.nome"
-              class="input-escondido"
-              v-model="podeVer"
-            />
-            <label class="jogador-label" :for="`jogador-${jogador.id}`">
-              <span class="custom-checkbox"></span>
-              <span class="nome-texto">{{ jogador.nome }}</span>
-            </label>
-          </div>
 
-
-  
-
-           </div>
-          </div>
-        <button type="button" class="primary-btn" @click="inserearquivo()">Confirmar</button>
-      </div>
-      </dialog>
   </div>
   <ul 
             v-if="MenuVisivel" 
@@ -1210,6 +1517,25 @@ function rolarDados() {
         </label>
       </li>
           </ul>
+  <Teleport to="body">
+    <div
+      v-if="imagemExpandida"
+      class="image-modal-overlay"
+      @click.self="fecharImagemExpandida"
+    >
+      <div class="image-modal" role="dialog" aria-modal="true" aria-label="Imagem ampliada">
+        <button
+          type="button"
+          class="image-modal-close"
+          aria-label="Fechar imagem"
+          @click="fecharImagemExpandida"
+        >
+          ✕
+        </button>
+        <img :src="imagemExpandida" alt="Imagem ampliada da mensagem" />
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -1810,6 +2136,12 @@ dialog {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.small-btn.secondary {
+  background: rgba(255,255,255,0.06);
+  color: #f7e7b9;
+  border: 1px solid rgba(212,175,55,0.2);
+}
+
 .small-btn:hover,
 .master-action-btn:hover {
   transform: translateY(-1px);
@@ -1874,6 +2206,131 @@ dialog {
   background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
   color: #e3d6b0;
   border: 1px solid rgba(255,255,255,0.04);
+}
+
+.player-ficha-row {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ficha-master-btn {
+  align-self: stretch;
+}
+
+.ficha-actions-block--stacked {
+  width: min(100%, 260px);
+  align-items: center;
+  margin: 0 auto;
+}
+
+.ficha-actions-block--stacked .ficha-label {
+  width: 100%;
+  min-height: 2.35rem;
+}
+
+.ficha-actions-block--stacked .ficha-upload-btn {
+  margin-left: 0;
+}
+
+.ficha-actions-block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.ficha-actions-block.compact {
+  min-width: 0;
+}
+
+.ficha-label {
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(212,175,55,0.35);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(240,230,140,0.08));
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f7e7b9;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.ficha-label:hover,
+.ficha-label:focus-visible {
+  transform: translateY(-2px);
+  border-color: #f0e68c;
+  background: linear-gradient(135deg, rgba(212,175,55,0.5), rgba(240,230,140,0.2));
+  color: #fff8d6;
+  box-shadow: 0 8px 18px rgba(212,175,55,0.28), 0 0 0 3px rgba(212,175,55,0.1);
+  outline: none;
+}
+
+.ficha-button-icon {
+  color: #f0e68c;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.ficha-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #f0e68c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ficha-label:hover .ficha-button-icon,
+.ficha-label:focus-visible .ficha-button-icon {
+  transform: rotate(18deg) scale(1.15);
+}
+
+.player-ficha-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.player-ficha-actions.compact {
+  justify-content: center;
+}
+
+.ficha-action-btn {
+  flex: 1 1 90px;
+  min-width: 88px;
+  min-height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(240,230,140,0.45);
+  background: linear-gradient(135deg, #b88a16, #f0c94b 55%, #f0e68c);
+  color: #171106;
+  box-shadow: 0 10px 18px rgba(212, 175, 55, 0.24);
+}
+
+.ficha-action-btn:hover,
+.ficha-action-btn:focus-visible {
+  transform: translateY(-3px) scale(1.02);
+  border-color: #fff3a8;
+  background: linear-gradient(135deg, #d4af37, #fff0a3 55%, #fff8d1);
+  box-shadow: 0 14px 28px rgba(212, 175, 55, 0.38), 0 0 0 3px rgba(212,175,55,0.12);
+  outline: none;
 }
 
 .link-btn {
@@ -2032,7 +2489,9 @@ li {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   overflow: hidden;
 }
-
+.error{
+  color: red;
+}
 .messages-backdrop {
   position: absolute;
   inset: 0;
@@ -2056,9 +2515,43 @@ li {
   position: relative;
   z-index: 1;
   height: 100%;
-  
   overflow-x: hidden;
-/* scrollbar styling for WebKit (Chrome, Edge, Safari) */
+  overflow-y: auto;
+}
+
+.oldest-scroll-indicator {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.7rem;
+  background: transparent;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+.oldest-scroll-indicator.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.oldest-scroll-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: rgba(240, 230, 140, 0.9);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.25));
 }
 
 /* Dice modal styles */
@@ -2068,13 +2561,18 @@ li {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
   background: rgba(0,0,0,0.45);
   z-index: 2100; /* above drawer/composer */
 }
 
 .dice-modal {
-  width: min(520px, 94%);
-  max-width: 520px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: linear-gradient(180deg, rgba(18,18,18,0.98), rgba(8,8,8,0.98));
   border: 1px solid rgba(212,175,55,0.16);
   border-radius: 12px;
@@ -2092,26 +2590,176 @@ li {
 }
 
 .dice-modal-body {
-  display:flex;
-  gap:1rem;
-  align-items:flex-start;
-  flex-wrap:wrap;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.dice-options { display:flex; gap:0.5rem; flex-wrap:wrap; }
-.dice-option { padding:0.45rem 0.5rem; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.08); color:#f6e9c9; cursor:pointer; }
+.dice-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
 
-.modal-roll-builder { flex:1; min-width:160px; }
+.dice-modal .dice-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 7rem;
+  padding: 0.65rem 0.35rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(212,175,55,0.16);
+  color: #f6e9c9;
+}
+
+.dice-modal .dice-option:hover {
+  border-color: rgba(229,193,88,0.65);
+  background: rgba(229,193,88,0.08);
+}
+
+.dice-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.counter-button {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  border: 1px solid rgba(229,193,88,0.35);
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #e5c158;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.counter-button:hover:not(:disabled),
+.counter-button:focus-visible {
+  background: rgba(229,193,88,0.16);
+  border-color: #e5c158;
+}
+
+.counter-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dice-count {
+  color: #f5e9d0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.modal-roll-builder {
+  position: static;
+  width: 100%;
+  min-width: 0;
+}
+
+.roll-summary {
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2.4rem;
+  margin-bottom: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(229,193,88,0.18);
+  border-radius: 8px;
+  background: #121212;
+  color: #e5c158;
+  font-weight: 700;
+}
+
+.summary-part + .summary-part::before {
+  content: ' + ';
+  color: #cdbf90;
+}
+
+.summary-empty {
+  color: #8d866f;
+  font-weight: 500;
+}
 
 .dice-modal-actions { display:flex; justify-content:flex-end; gap:0.5rem; }
 .primary-btn { background:linear-gradient(90deg,#d4af37,#f0d57a); border:0; padding:0.5rem 0.8rem; border-radius:8px; color:#0a0a0a; font-weight:700; }
 .secondary-btn { background:transparent; border:1px solid rgba(212,175,55,0.12); padding:0.45rem 0.65rem; border-radius:8px; color:#f6e9c9; }
 
-/* Mobile: make modal full-screen drawer style */
 @media (max-width:900px) {
-  .dice-modal { width:100%; height:100%; border-radius:0; max-width:100%; padding:1rem 0.85rem; }
-  .dice-modal-body { flex-direction:column; }
-  .dice-modal-actions { padding-bottom:calc(env(safe-area-inset-bottom,0px) + 0.5rem); }
+  .dice-modal-overlay {
+    padding: 0;
+  }
+
+  .dice-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 1rem 0.85rem;
+    justify-content: center;
+  }
+  .dice-modal-header,
+  .dice-modal-body,
+  .roll-bonus,
+  .dice-modal-actions {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .dice-modal-body {
+    gap: 0.7rem;
+  }
+  .dice-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+  .dice-modal .dice-option {
+    min-height: 6.2rem;
+    padding: 0.5rem 0.25rem;
+  }
+  .counter-button,
+  .bonus-controls .counter-button {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  .dice-modal-actions {
+    padding-bottom: calc(env(safe-area-inset-bottom,0px) + 0.5rem);
+  }
+  .dice-modal-actions > button {
+    flex: 1;
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dice-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dice-modal {
+    padding: 0.75rem;
+    gap: 0.55rem;
+  }
+  .dice-modal .dice-option {
+    min-height: 5.7rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .dice-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* WebKit browsers for messages */
@@ -2215,6 +2863,68 @@ li {
   border-radius: 10px;
   object-fit: cover;
   background: rgba(0,0,0,0.3);
+  cursor: zoom-in;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.message-image:hover,
+.message-image:focus-visible {
+  filter: brightness(1.12);
+  outline: none;
+  transform: scale(1.01);
+}
+
+.image-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.image-modal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 1100px);
+  height: min(100%, 850px);
+}
+
+.image-modal > img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.7);
+}
+
+.image-modal-close {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  z-index: 1;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 50%;
+  background: #15110d;
+  color: #f0e68c;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.image-modal-close:hover,
+.image-modal-close:focus-visible {
+  background: #2a2015;
+  outline: none;
 }
 
 .roll-message {
@@ -2382,22 +3092,52 @@ li {
 .roll-bonus {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.6rem;
-  margin-bottom: 0.55rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(229,193,88,0.18);
+  border-radius: 8px;
+  background: #1e1e1e;
   color: #cdbf90;
   font-size: 0.78rem;
   font-weight: 700;
 }
 
-.roll-bonus input {
+.roll-bonus-label {
+  color: #e5c158;
+  white-space: nowrap;
+}
+
+.bonus-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bonus-controls input {
+  box-sizing: border-box;
   width: 4.25rem;
+  min-height: 2rem;
   padding: 0.35rem 0.45rem;
   border: 1px solid rgba(212,175,55,0.28);
   border-radius: 7px;
   background: rgba(0,0,0,0.38);
   color: #f7e7b9;
   text-align: center;
+}
+
+.bonus-controls .counter-button {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+}
+
+.bonus-formatted {
+  min-width: 2.25rem;
+  color: #e5c158;
+  text-align: right;
 }
 
 .roll-button {
@@ -2504,6 +3244,36 @@ li {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(212,175,55,0.24);
 }
+
+.composer-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 6.2rem;
+  border: 1px solid rgba(255,248,190,0.6);
+  background: linear-gradient(135deg, #b88a16, #e5c158 52%, #fff0a3);
+  box-shadow: 0 10px 24px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.composer-send-btn:hover,
+.composer-send-btn:focus-visible {
+  transform: translateY(-3px) scale(1.03);
+  filter: brightness(1.1);
+  box-shadow: 0 15px 30px rgba(212,175,55,0.42), 0 0 0 3px rgba(212,175,55,0.14), inset 0 1px 0 rgba(255,255,255,0.5);
+  outline: none;
+}
+
+.send-button-icon {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.composer-send-btn:hover .send-button-icon,
+.composer-send-btn:focus-visible .send-button-icon {
+  transform: translateX(3px) rotate(-8deg);
+}
 .break {
   line-break: anywhere;
 }
@@ -2554,6 +3324,15 @@ li {
 
   .chat-panel {
     min-height: 70vh;
+  }
+
+  .messages {
+    background: #000;
+  }
+
+  .messages-backdrop,
+  .messages::after {
+    display: none;
   }
 
   /* Composer fixed at bottom on mobile */
@@ -2734,6 +3513,97 @@ li {
 
   .mobile-panel-content {
     color: #e3d6b0;
+  }
+
+  .mobile-panel-content .player-ficha-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mobile-panel-content .player-ficha-row > span:first-child {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-panel-content .player-ficha-row .ficha-actions-block {
+    align-items: flex-start;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mobile-panel-content .player-ficha-row .ficha-label {
+    justify-content: flex-start;
+  }
+
+  .mobile-file-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mobile-file-tools {
+    margin-top: -0.15rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .mobile-folder-group {
+    margin: 0;
+  }
+
+  .mobile-file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0;
+    margin: 0;
+  }
+
+  .mobile-file-item {
+    list-style: none;
+    margin: 0;
+  }
+
+  .mobile-file-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.8rem;
+    color: #e3d6b0;
+  }
+
+  .mobile-file-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
+  }
+
+  .mobile-file-link {
+    color: #e3d6b0;
+    text-decoration: none;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-folder-row {
+    display: flex;
+    align-items: center;
+    min-height: 1.8rem;
+    color: #d9c88a;
+  }
+
+  .mobile-folder-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+    padding-left: 0.2rem;
+  }
+
+  .mobile-child-file {
+    margin-left: 0.2rem;
   }
 
   /* Master panel file picker styling (shared desktop/mobile) */

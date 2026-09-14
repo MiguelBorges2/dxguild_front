@@ -169,6 +169,7 @@ async function handleRegister(){
                 Cadastrar
               </button>
             </div>
+
            
           </div>
 
@@ -189,9 +190,13 @@ async function handleRegister(){
         <div class="tables-container">
           <h2 class="section-title">Mesas Recentes</h2>
           <p class="section-subtitle">Junte-se a uma aventura épica</p>
+          <button class="find-tables-button" type="button" @click="router.push('/buscar')">
+            <span aria-hidden="true">✦</span>
+            Encontrar Mesas
+          </button>
           
           <div class="tables-grid">
-            <div v-for="table in recentTables" :key="table.id" class="table-card" @click="router.push(`/mesa/${table.id}`)">
+            <div v-for="table in recentTables" :key="table.id" class="table-card" @click="router.push(`/mesa/${encodeURIComponent(table.nome)}`)">
               <div class="table-image">
                 <img :src="table.imagem" :alt="table.name" />
               </div>
@@ -218,7 +223,7 @@ async function handleRegister(){
               <div class="vacancy-badge">
                 <span>temos vaga</span>
               </div>
-              <button class="btn-join" @click.stop="router.push(`/mesa/${table.id}`)">Entrar na Mesa</button>
+              <button class="btn-join" @click.stop="router.push(`/mesa/${encodeURIComponent(table.nome)}`)">Entrar na Mesa</button>
             </div>
           </div>
         </div>
@@ -1054,6 +1059,30 @@ async function handleRegister(){
   letter-spacing: 0.5px;
 }
 
+.find-tables-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.4rem auto 1.5rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  color: #f0e68c;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.find-tables-button:hover,
+.find-tables-button:focus-visible {
+  transform: translateY(-2px);
+  background: rgba(212, 175, 55, 0.24);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
+  outline: none;
+}
+
 .btn-join:hover {
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
   transform: translateY(-2px);
@@ -1213,4 +1242,5 @@ async function handleRegister(){
   pointer-events: none;
 }
 }
+
 </style>
