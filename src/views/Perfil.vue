@@ -29,12 +29,13 @@ async function loadDashboard() {
   error.value = null
   successMessage.value = ''
   try {
-    const res = await api.get('http://localhost:8080/dxguild/user/dash')
+    const res = await api.get('/dxguild/user/dash')
     const data = res.data || {}
     user.value = data
     const authStore = useAuthStore()
     authStore.setUsuario(data.nome, data.imagem)
-    const mesas = await api.get(`http://localhost:8080/dxguild/mesa/usuario/${user.value?.id}`)
+    console.log("usuario adaptado" + authStore.getUser())
+    const mesas = await api.get(`/dxguild/mesa/usuario/${user.value?.nome}`)
     const data2 = mesas.data.Criadas || {}
     createdTables.value = data2 || []
     participatingTables.value = mesas.data.Participa || []
@@ -103,7 +104,7 @@ async function createTable() {
 
     console.log(urlDaImagemFinal)
     
-      let res = await api.post('http://localhost:8080/dxguild/mesa', {
+      let res = await api.post('/dxguild/mesa', {
         nome: nome,
         sistema: sistema,
         descricao: descricao,

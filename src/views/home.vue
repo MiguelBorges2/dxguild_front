@@ -5,6 +5,7 @@ import ShieldLogo from '@/components/ShieldLogo.vue'
 import NavBar from '@/components/NavBar.vue'
 import axios from 'axios'
 import {useAuthStore} from '@/stores/auth.js'
+import { useMensagensStore } from '@/stores/DmStore.js'
 import { onMounted } from 'vue'
 const router = useRouter()
 const showLoginModal = ref(false)
@@ -18,6 +19,7 @@ const registerNickname = ref('')
 const registerImage = ref(null)
 const registerImagePreview = ref(null)
 const recentTables = ref([])
+const DmStore = useMensagensStore()
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
@@ -33,7 +35,7 @@ const erroCriar = ref('')
 const erroLog = ref('')
 onMounted(async () => {
     try {
-        const res = await axios.get('http://localhost:8080/dxguild/mesa/recente')
+        const res = await axios.get('/dxguild/mesa/recente')
         recentTables.value = res.data
     } catch (e) {
         console.error("Erro ao buscar mesas recentes:", e)
@@ -43,7 +45,7 @@ onMounted(async () => {
 
   async function handleLogin(){
       try { 
-        const res = await axios.post('http://localhost:8080/dxguild/auth/login', {
+        const res = await axios.post('/dxguild/auth/login', {
           email: loginEmail.value,
           password: loginPassword.value
         })  
@@ -96,7 +98,7 @@ async function handleRegister(){
         formData
       );
       const urlDaImagemFinal = cloudinaryRes.data.secure_url;
-      const res = await axios.post('http://localhost:8080/dxguild/user', {
+      const res = await axios.post('/dxguild/user', {
         email: registerEmail.value,
         password: registerPassword.value,
         nome: registerNickname.value,

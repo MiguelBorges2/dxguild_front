@@ -1,14 +1,19 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-
+import { useMensagensStore } from '@/stores/DmStore.js'
 export const useAuthStore = defineStore('auth', () => {
+  const mensagensStore = useMensagensStore()
   const token = ref(localStorage.getItem('token') || null)
   const refresh = ref(localStorage.getItem('refresh') || null)
   const Navcontroller = ref(Boolean(token.value))
   const user = ref(localStorage.getItem('chat_nome') || null);
   const imagem = ref(localStorage.getItem('chat_imagem') || null);
+
   function setUser(newUser) {
     user.value = newUser
+    console.log("usuario setado" + user.value)
+  
+    console.log("entoru no watch do app.vue")
   }
   function getUser() {
     return user.value
@@ -19,11 +24,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
  const setUsuario = (novoNome, novaImagem) => {
         user.value = novoNome;
-        imagem.value = novaImagem; // <--- Atualiza a variável reativa da imagem também
-
-        // Salva no navegador usando as mesmas chaves
+        imagem.value = novaImagem; 
         localStorage.setItem('chat_nome', novoNome);
         localStorage.setItem('chat_imagem', novaImagem);
+        mensagensStore.desconectar();
+        mensagensStore.conexao();
+       
     };
   function setToken(newToken, newRefresh) {
     token.value = newToken
@@ -57,5 +63,19 @@ export const useAuthStore = defineStore('auth', () => {
   function getRefresh(){
     return refresh.value
   }
-  return { token, refresh, Navcontroller, setToken, clearToken, getToken, getRefresh, getUser, setUser, getImagem, setUsuario }
+  return {
+  token,
+  refresh,
+  Navcontroller,
+  user,        // <- adicionado
+  imagem,      // <- adicionado, já que você usa authStore.getImagem() também, mas o ref cru é útil expor
+  setToken,
+  clearToken,
+  getToken,
+  getRefresh,
+  getUser,
+  setUser,
+  getImagem,
+  setUsuario
+}
 })

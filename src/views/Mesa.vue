@@ -78,7 +78,7 @@ const erroJogador = ref('')
       const nomeArq = prompt('Digite o nome do arquivo:')
       const url =  cloudinaryRes.data.secure_url
       if(itemSelecionado.value == null){
-        const res = await api.post(`http://localhost:8080/dxguild/arquivo/raiz`, {
+        const res = await api.post(`/dxguild/arquivo/raiz`, {
           nome: nomeArq,
           mesa: mesa.value.nome,
           arquivo: url,
@@ -95,7 +95,7 @@ const erroJogador = ref('')
           });
         return
       }
-      const res = await api.post(`http://localhost:8080/dxguild/arquivo`, {
+      const res = await api.post(`/dxguild/arquivo`, {
         nome: nomeArq,
         mesa: mesa.value.nome,
         arquivo: url,
@@ -119,8 +119,10 @@ const erroJogador = ref('')
           });
         
     } catch (error) {
-      console.error('Erro ao enviar imagem para o Cloudinary:', error)
-      throw error
+    
+      if(error.response && error.response.status === 400) {
+        alert('Nome de pasta inválido. mantenha o tamanho entre 2 e 20 caracteres')
+      }
     }
   }
   
@@ -128,7 +130,7 @@ const erroJogador = ref('')
   console.log('Adicionando jogador:', mesa.value.id)
     try{
       erroJogador.value = ''
-      const res = await api.post(`http://localhost:8080/dxguild/mesa/usuario/adicionar`, {
+      const res = await api.post(`/dxguild/mesa/usuario/adicionar`, {
         mesa: mesa.value.nome,
         nick: novoJogador.value
 
@@ -293,7 +295,7 @@ var page = 0
 onMounted(async () => {
     try {
         const nomeMesa = encodeURIComponent(route.params.nome || route.params.id || '')
-        const res = await api.get(`http://localhost:8080/dxguild/mesa/${nomeMesa}`)
+        const res = await api.get(`/dxguild/mesa/${nomeMesa}`)
         pastas.value = res.data.pastas.arvore
         pastas.value.forEach(pasta => {
             mapaArquivos.value.set(pasta.nome, false)
@@ -354,7 +356,7 @@ onMounted(async () => {
         } 
     }
    
-    const socket = new SockJS('http://localhost:8080/dx-rpg');
+    const socket = new SockJS('/dx-rpg');
 
     stompClient.value = new Client({
         webSocketFactory: () => socket,
@@ -544,7 +546,7 @@ async function CarregaMais() {
 
     // 2. Busca os dados da API
     page++;
-    const res = await api.get(`http://localhost:8080/dxguild/mesa/${mesa.value.nome}/mensagensPage/${page}`);
+    const res = await api.get(`/dxguild/mesa/${mesa.value.nome}/mensagensPage/${page}`);
     const chat = res.data || [];
 
     // Se não houver novas mensagens, encerra para evitar processamento desnecessário
@@ -586,7 +588,7 @@ async function ficha(nome){
       nomeJogadorFicha.value = nome
       console.log("entrou")
         const mesaNome = mesa.value.nome
-        const res = await api(`http://localhost:8080/dxguild/mesa/ficha/${encodeURIComponent(mesaNome)}/${encodeURIComponent(nome)}`)
+        const res = await api(`/dxguild/mesa/ficha/${encodeURIComponent(mesaNome)}/${encodeURIComponent(nome)}`)
         console.log("ficha" + res.data)
         window.open(res.data.ficha, '_blank', 'noopener,noreferrer');
     }catch(e){
@@ -622,7 +624,7 @@ const aoSelecionarUploadFicha = (event) => {
 async function criarFicha(arquivo){
     try{
       const url = await enviarParaCloudinary(arquivo);
-      const res = await api.post(`http://localhost:8080/dxguild/mesa/ficha`, {
+      const res = await api.post(`/dxguild/mesa/ficha`, {
         ficha: url,
         mesa: mesa.value.nome,
         jogador: nomeJogadorFicha.value
@@ -701,7 +703,7 @@ async function CriarPasta() {
     }
     console.log(eraiz)
     const nomePasta = prompt('Digite o nome da nova pasta:')
-    const res = await api.post(`http://localhost:8080/dxguild/pasta`, {
+    const res = await api.post(`/dxguild/pasta`, {
       nome: nomePasta,
       filhos: [],
       permitidos: [],
@@ -765,6 +767,12 @@ async function CriarPasta() {
    
   } catch (error) {
     console.error('Erro ao criar pasta:', error)
+    if(error.response && error.response.status === 409) {
+      alert('Já existe uma pasta com esse nome.')
+    } 
+    if(error.response.status === 400) {
+      alert('Nome de pasta inválido. mantenha o tamanho entre 2 e 20 caracteres')
+    }
   }
 }
 onMounted(() => window.addEventListener('click', fecharMenu))
@@ -822,7 +830,7 @@ async function confirmarArquivoModal() {
     )
 
     const url = cloudinaryRes.data.secure_url
-    const res = await api.post(`http://localhost:8080/dxguild/mesa/arquivo/adicionar`, {
+    const res = await api.post(`/dxguild/mesa/arquivo/adicionar`, {
       mesa: mesa.value.nome,
       arquivo: url,
       nome: nomeFinal
@@ -831,6 +839,9 @@ async function confirmarArquivoModal() {
     arquivosMesa.value.push(res.data ?? { nome: nomeFinal, tipo: 'Arquivo' })
   } catch (error) {
     console.error('Erro ao enviar arquivo para o Cloudinary:', error)
+    if(error.response && error.response.status === 400) {
+      alert('Erro ao enviar arquivo. Verifique o tamanho e o tipo do arquivo. o Nome do arquivo não pode ser vazio ou maior que 20 caracteres')
+    }
   } finally {
     fecharModalArquivo()
   }

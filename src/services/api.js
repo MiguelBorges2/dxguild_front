@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/auth'
 import router from '../router'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_URL || '/',
 })
 
 // Interceptor para adicionar token nas requisições
@@ -42,7 +42,7 @@ api.interceptors.response.use(
         }
 
         try {
-          const res = await axios.post('http://localhost:8080/dxguild/auth/refresh', { token: refreshToken })
+          const res = await axios.post('/dxguild/auth/refresh', { token: refreshToken })
           const data = res.data || {}
           const newAccessToken = data.acessToken || data.accessToken || data.token || data
           const newRefreshToken = data.refreshToken || authStore.getRefresh()

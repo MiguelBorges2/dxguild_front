@@ -103,7 +103,7 @@ function resetSearch() {
 }
 async function checaJogador(mesaNome, criador) {
   try {
-    const res = await api.get(`http://localhost:8080/dxguild/mesa/checaJogador/${encodeURIComponent(mesaNome)}`)
+    const res = await api.get(`/dxguild/mesa/checaJogador/${encodeURIComponent(mesaNome)}`)
     if (res.data === true) {
       router.push(`/mesa/${encodeURIComponent(mesaNome)}`)
     } 
@@ -122,7 +122,7 @@ async function checaJogador(mesaNome, criador) {
 }
 async function sendInterestMessage() {
     // Usa o método da store que já valida e envia pela conexão global ativa
-    mensagensStore.enviarMensagem(
+    const enviado = await mensagensStore.enviarMensagem(
         `/app/user/${encodeURIComponent(interestTableCreator.value)}/${encodeURIComponent(useAuthStore().getUser())}`,
         {
             criador: interestTableCreator.value,
@@ -133,7 +133,7 @@ async function sendInterestMessage() {
     );
 
     // Fecha o modal ou atualiza o estado de enviado
-    interestMessageSent.value = true;
+    if (enviado) interestMessageSent.value = true;
 }
 function closeInterestModal() {
   showInterestModal.value = false
@@ -148,7 +148,7 @@ const empty = ref(true)
 const mesasRecente = ref([])
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:8080/dxguild/mesa/recente')
+    const response = await axios.get('/dxguild/mesa/recente')
     mesasRecente.value = response.data
     
   } catch (error) {
@@ -173,11 +173,11 @@ watchDebounced(
     hasSearched.value = true
      var results = []
     if(searchBySystem.value) {
-      const response = await axios.get(`http://localhost:8080/dxguild/search/${encodeURIComponent(newQuery)}/${encodeURIComponent("sistema")}`)
+      const response = await axios.get(`/dxguild/search/${encodeURIComponent(newQuery)}/${encodeURIComponent("sistema")}`)
       results = response.data
      
     }else {
-       const response = await axios.get(`http://localhost:8080/dxguild/search/${encodeURIComponent(newQuery)}/${encodeURIComponent("mesa")}`)
+       const response = await axios.get(`/dxguild/search/${encodeURIComponent(newQuery)}/${encodeURIComponent("mesa")}`)
        results = response.data
    
     }

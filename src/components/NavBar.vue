@@ -56,7 +56,7 @@ const aceitarJogador = async (mensagem) => {
   // Implementar lógica para aceitar jogador
   console.log('Aceitar jogador:', mensagem)
   try{
-    const res = await api.post(`http://localhost:8080/dxguild/direct/aceitar`, {
+    const res = await api.post(`/dxguild/direct/aceitar`, {
         criador: authStore.getUser()  ,
         sender: mensagem.nome,
         mesa: mensagem.mesa
@@ -67,8 +67,12 @@ const aceitarJogador = async (mensagem) => {
 
     
   }catch(error){
-      console.error('Erro ao aceitar jogador:', error)
+    if(error.response && error.response.status === 409) {
+         mensagensStore.marcarComoLida(mensagem.mesa);
+
     }
+      console.error('Erro ao aceitar jogador:', error)
+  }
 }
 
   
@@ -76,7 +80,7 @@ const aceitarJogador = async (mensagem) => {
     // Implementar lógica para recusar jogador
     console.log('Recusar jogador:', mensagem)
     try{
-      const res = await api.post(`http://localhost:8080/dxguild/direct/rejeitar`, {
+      const res = await api.post(`/dxguild/direct/rejeitar`, {
           criador: authStore.getUser()  ,
           sender: mensagem.nome,
           mesa: mensagem.mesa
