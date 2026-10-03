@@ -155,6 +155,12 @@ async function handleRegister(){
       <section class="hero-section">
         <img class="fundo" src="../assets/imgs/fundo2.png" alt="Fundo da página" />
         <div class="hero-overlay"></div>
+        <div class="hero-ornaments" aria-hidden="true">
+          <svg class="hero-ornament hero-ornament--top-left" viewBox="0 0 180 180"><path d="M10 150V10h140M10 54h34l14-14 14 14h28M10 90h24l16 16 16-16h34M32 10v28M64 10v16M28 128l20-20 20 20M76 116l12-12 12 12M105 25l11 19 22 3-16 16 4 22-21-10-20 10 4-22-16-16 22-3 10-19Z" /><circle cx="128" cy="112" r="15" /><path d="M128 97a15 15 0 1 0 0 30 11 11 0 1 1 0-30Z" /><circle cx="148" cy="69" r="3" /><circle cx="138" cy="82" r="2" /></svg>
+          <svg class="hero-ornament hero-ornament--top-right" viewBox="0 0 180 180"><path d="M10 150V10h140M10 54h34l14-14 14 14h28M10 90h24l16 16 16-16h34M32 10v28M64 10v16M28 128l20-20 20 20M76 116l12-12 12 12M105 25l11 19 22 3-16 16 4 22-21-10-20 10 4-22-16-16 22-3 10-19Z" /><circle cx="128" cy="112" r="15" /><path d="M128 97a15 15 0 1 0 0 30 11 11 0 1 1 0-30Z" /><circle cx="148" cy="69" r="3" /><circle cx="138" cy="82" r="2" /></svg>
+          <svg class="hero-ornament hero-ornament--bottom-left" viewBox="0 0 180 180"><path d="M10 150V10h140M10 54h34l14-14 14 14h28M10 90h24l16 16 16-16h34M32 10v28M64 10v16M28 128l20-20 20 20M76 116l12-12 12 12M105 25l11 19 22 3-16 16 4 22-21-10-20 10 4-22-16-16 22-3 10-19Z" /><circle cx="128" cy="112" r="15" /><path d="M128 97a15 15 0 1 0 0 30 11 11 0 1 1 0-30Z" /><circle cx="148" cy="69" r="3" /><circle cx="138" cy="82" r="2" /></svg>
+          <svg class="hero-ornament hero-ornament--bottom-right" viewBox="0 0 180 180"><path d="M10 150V10h140M10 54h34l14-14 14 14h28M10 90h24l16 16 16-16h34M32 10v28M64 10v16M28 128l20-20 20 20M76 116l12-12 12 12M105 25l11 19 22 3-16 16 4 22-21-10-20 10 4-22-16-16 22-3 10-19Z" /><circle cx="128" cy="112" r="15" /><path d="M128 97a15 15 0 1 0 0 30 11 11 0 1 1 0-30Z" /><circle cx="148" cy="69" r="3" /><circle cx="138" cy="82" r="2" /></svg>
+        </div>
        
         <div class="hero-content">
           <div class="hero-text">
@@ -176,7 +182,7 @@ async function handleRegister(){
           </div>
 
           <div class="hero-dragon">
-              <img src="../assets/imgs/hero.png" />
+              <img class="hero-logo-image" src="../assets/imgs/hero.png" alt="Emblema da DXGuild" />
           </div>
         </div>
 
@@ -189,11 +195,12 @@ async function handleRegister(){
 
       <!-- Recent Tables Section -->
       <section class="recent-tables-section">
+        <svg class="section-ornament section-ornament--tables" viewBox="0 0 260 420" aria-hidden="true"><path d="M32 10v400M32 48h86l20-20 20 20h46M32 152h58l18 18 18-18h54M32 258h76l22 22 22-22h52M32 356h112" /><circle cx="182" cy="98" r="27" /><path d="m182 62 10 18 20 3-15 14 4 20-19-10-18 10 4-20-15-14 20-3 9-18ZM182 135v30M167 150h30" /><path d="m90 292 18 18-18 18-18-18 18-18Z" /><circle cx="62" cy="370" r="5" /></svg>
+        <svg class="section-ornament section-ornament--tables-two" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="72" /><path d="m110 28 16 30 34 5-25 25 6 34-31-16-30 16 6-34-25-25 34-5 15-30ZM110 80v60M80 110h60" /><circle cx="110" cy="110" r="22" /></svg>
         <div class="tables-container">
           <h2 class="section-title">Mesas Recentes</h2>
           <p class="section-subtitle">Junte-se a uma aventura épica</p>
           <button class="find-tables-button" type="button" @click="router.push('/buscar')">
-            <span aria-hidden="true">✦</span>
             Encontrar Mesas
           </button>
           
@@ -204,7 +211,9 @@ async function handleRegister(){
               </div>
               
               <div class="table-header">
-                <h3 class="table-name">{{ table.nome }}</h3>
+                <div class="table-title-row">
+                  <h3 class="table-name">{{ table.nome }}</h3>
+                </div>
               </div>
               
               <div class="table-info">
@@ -234,34 +243,36 @@ async function handleRegister(){
 
 
       <section class="features-section">
+        <svg class="section-ornament section-ornament--features" viewBox="0 0 260 420" aria-hidden="true"><path d="M228 10v400M228 54H150l-20-20-20 20H58M228 160h-62l-18 18-18-18H82M228 274h-90l-22 22-22-22H58M228 372H118" /><circle cx="78" cy="104" r="27" /><path d="M78 77c-9 10-9 21 0 27 9-6 9-17 0-27Zm0 27c-9 10-9 21 0 27 9-6 9-17 0-27ZM51 104h54" /><path d="m166 300 16 16-16 16-16-16 16-16Z" /><circle cx="198" cy="374" r="5" /></svg>
+        <svg class="section-ornament section-ornament--features-two" viewBox="0 0 220 220" aria-hidden="true"><path d="M110 20v180M20 110h180M46 46l128 128M174 46 46 174" /><circle cx="110" cy="110" r="64" /><path d="m110 58 12 30 31 2-24 20 8 30-27-17-27 17 8-30-24-20 31-2 12-30Z" /></svg>
         <div class="fade-top"></div>
-        <img class="fundo2" src="../assets/imgs/fundo3.png" alt="Fundo da página" />
-        <div class="info-overlay"></div>
+        <img class="fundo" src="../assets/imgs/fundo3.png" alt="" />
+        <div class="hero-overlay"></div>
         <div class="features-container">
           <h2 class="section-title">O que você encontra aqui</h2>
           <p class="section-subtitle">Sua jornada começa com facilidade, comunidade e aventura</p>
 
           <div class="features-grid">
             <div class="feature-card">
-              <div class="feature-icon">✦</div>
+              <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 20 14-14M4 21l3-6M17 3l4 4M8 17l-3-3M15 10l3 3" /></svg></div>
               <h3>Inscrição Gratuita</h3>
               <p>Entre na guilda sem custo e comece a participar das mesas imediatamente.</p>
             </div>
 
             <div class="feature-card">
-              <div class="feature-icon">⚔️</div>
+              <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9L12 3Z" /></svg></div>
               <h3>Vários Sistemas</h3>
               <p>Escolha entre diferentes sistemas e encontre a experiência ideal para você.</p>
             </div>
 
             <div class="feature-card">
-              <div class="feature-icon">🛡️</div>
+              <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6l7-3Z" /></svg></div>
               <h3>Encontre seu Grupo</h3>
               <p>Conecte-se com outros aventureiros e monte sua equipe para a próxima campanha.</p>
             </div>
 
             <div class="feature-card">
-              <div class="feature-icon">🎲</div>
+              <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10l4 7-9 11L3 10l4-7ZM7 3l5 18L17 3M3 10h18" /></svg></div>
               <h3>Jogue e Divirta-se</h3>
               <p>Desfrute de noites épicas de roleplay, estratégia e muita diversão.</p>
             </div>
@@ -269,6 +280,36 @@ async function handleRegister(){
         </div>
         <div class="fade-to-black"></div>
       </section>
+
+      <section class="getting-started-section">
+        <svg class="section-ornament section-ornament--start" viewBox="0 0 300 260" aria-hidden="true"><path d="M20 130h260M74 54l76 76-76 76M42 76h58M42 184h58M220 76h38M220 184h38" /><circle cx="42" cy="130" r="14" /><circle cx="276" cy="130" r="14" /><path d="m150 82 13 23 26 4-19 19 4 26-24-12-23 12 4-26-19-19 26-4 12-23ZM140 130h20" /></svg>
+        <svg class="section-ornament section-ornament--start-two" viewBox="0 0 220 220" aria-hidden="true"><circle cx="110" cy="110" r="74" /><path d="M110 36v148M36 110h148M58 58l104 104M162 58 58 162M110 72l10 28 28 10-28 10-10 28-10-28-28-10 28-10 10-28Z" /></svg>
+        <div class="getting-started-container">
+          <h2 class="section-title">Como começar</h2>
+          <p class="section-subtitle">Escolha o primeiro passo para a sua próxima aventura.</p>
+          <div class="start-steps">
+            <article class="start-step">
+              <div class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V8l6-4 6 4v12M9 20v-5h6v5M9 10h.01M15 10h.01" /></svg></div>
+              <div>
+                <h3>Crie uma mesa</h3>
+                <p>Monte sua campanha e convide aventureiros para formar o grupo.</p>
+              </div>
+            </article>
+            <article class="start-step">
+              <div class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4M8 11h6M11 8v6" /></svg></div>
+              <div>
+                <h3>Procure uma mesa</h3>
+                <p>Explore as mesas disponíveis, encontre uma que combine com você e peça para entrar.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <p>DXGuild</p>
+        <a href="mailto:miguel.costa@ufu.br">miguel.costa@ufu.br</a>
+      </footer>
 
       <!-- Login Modal -->
       <div v-if="showLoginModal" class="modal-overlay" @click.self="closeModals">
@@ -336,8 +377,8 @@ async function handleRegister(){
                   class="image-input"
                 />
                 <label for="register-image" class="image-upload-label">
-                  <span v-if="!registerImagePreview">📷 Escolher Imagem</span>
-                  <span v-else>✓ Imagem selecionada</span>
+                  <span v-if="!registerImagePreview">Escolher Imagem</span>
+                  <span v-else>Imagem selecionada</span>
                 </label>
                
               </div>
@@ -423,17 +464,6 @@ async function handleRegister(){
   );
   z-index: 1;
 }
-.info-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-     rgba(0, 0, 0, 0.85) 0%,
-    rgba(20, 10, 0, 0.75) 50%,
-    rgba(0, 0, 0, 0.9) 100%
-  );
-  z-index: 1;
-}
 .hero-content {
   position: relative;
   z-index: 2;
@@ -466,25 +496,12 @@ async function handleRegister(){
     object-fit: cover;
     z-index: -1;
 }
-.fundo2{
-    position: absolute;
-   
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
-}
 .title {
   font-family: 'TheWildBreathOfZelda', serif ;
   font-size: 4rem;
   font-weight: 900;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #d4af37 0%, #f0e68c 50%, #8b7500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #f0e68c;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   letter-spacing: 2px;
 }
@@ -1251,4 +1268,347 @@ async function handleRegister(){
 }
 }
 
+/* Refinamento visual local da Home */
+@font-face {
+  font-family: 'GuildDisplay';
+  src: url('../assets/fonts/AncientModernTales-a7Po.ttf') format('truetype');
+  font-display: swap;
+}
+
+.home {
+  --guild-gold: #d4af37;
+  --guild-gold-light: #f0e68c;
+  --guild-ink: #090909;
+  --guild-panel: #17120e;
+  --guild-copy: #d5d0c6;
+  background: var(--guild-ink);
+  color: var(--guild-copy);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.home ::selection { background: var(--guild-gold); color: #100d08; }
+.home :focus-visible { outline: 2px solid var(--guild-gold-light); outline-offset: 4px; }
+.home button, .home input { font-family: inherit; }
+
+.hero-section { min-height: min(760px, 100svh); background: #080806; }
+.hero-overlay { background: linear-gradient(105deg, rgba(0, 0, 0, .9), rgba(15, 9, 3, .72) 52%, rgba(0, 0, 0, .82)); }
+.hero-content {
+  width: min(1160px, 92%);
+  gap: clamp(2rem, 7vw, 7rem);
+  padding: 5rem 0 7rem;
+}
+.hero-text { max-width: 570px; }
+.title {
+  margin: 0 0 .7rem;
+  color: var(--guild-gold-light);
+  font-family: 'GuildDisplay', Georgia, serif;
+  font-size: clamp(4rem, 8vw, 6rem);
+  font-weight: 400;
+  letter-spacing: -.02em;
+  line-height: .95;
+  text-shadow: 0 6px 22px rgba(0, 0, 0, .62);
+}
+.subtitle {
+  margin: 0;
+  color: var(--guild-gold);
+  font-family: 'GuildDisplay', Georgia, serif;
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  font-weight: 400;
+  letter-spacing: .01em;
+  line-height: 1.18;
+}
+.description { max-width: 48ch; margin: 1.4rem 0 2.1rem; color: #e4dfd4; font-size: 1.08rem; line-height: 1.7; }
+.auth-buttons { gap: .85rem; }
+.btn {
+  min-height: 47px;
+  padding: .75rem 1.45rem;
+  border: 1px solid rgba(240, 230, 140, .65);
+  border-radius: 8px;
+  background: rgba(8, 8, 6, .48);
+  color: var(--guild-gold-light);
+  font-family: Georgia, serif;
+  font-size: .83rem;
+  font-weight: 700;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  transition: transform .22s ease, background .22s ease, border-color .22s ease, color .22s ease;
+}
+.btn-login { background: var(--guild-gold); border-color: var(--guild-gold); color: #171109; box-shadow: none; }
+.btn-register { background: rgba(0, 0, 0, .25); color: var(--guild-gold-light); }
+.btn:hover, .btn-login:hover { background: var(--guild-gold-light); border-color: var(--guild-gold-light); color: #171109; box-shadow: none; transform: translateY(-2px); }
+.hero-dragon { display: grid; min-height: 360px; place-items: center; padding: 2rem; border: 1px solid rgba(212, 175, 55, .42); background: rgba(8, 8, 6, .27); box-shadow: 0 24px 44px rgba(0, 0, 0, .3); }
+.hero-dragon img { width: min(100%, 380px); max-height: 350px; object-fit: contain; filter: drop-shadow(0 16px 20px rgba(0, 0, 0, .48)); }
+
+.recent-tables-section { min-height: auto; padding: clamp(4.5rem, 8vw, 7rem) 0; background: #050505; }
+.tables-container, .features-container, .getting-started-container { width: min(1160px, calc(100% - 3rem)); margin: 0 auto; }
+.section-title { margin: 0; color: var(--guild-gold-light); font-family: 'GuildDisplay', Georgia, serif; font-size: clamp(2.35rem, 4vw, 3.6rem); font-weight: 400; letter-spacing: -.015em; line-height: 1; }
+.section-subtitle { margin: .7rem 0 1.7rem; color: #c5bcaa; font-size: 1.03rem; line-height: 1.55; }
+.find-tables-button {
+  min-height: 43px;
+  margin: 0 0 2.2rem;
+  padding: .65rem 1.1rem;
+  border: 1px solid var(--guild-gold);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--guild-gold-light);
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .045em;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.find-tables-button span { display: none; }
+.find-tables-button:hover { background: var(--guild-gold); color: #171109; transform: translateY(-2px); }
+.tables-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 1.25rem; }
+.table-card { display: flex; min-width: 0; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid rgba(212, 175, 55, .34); border-radius: 14px; background: #11100d; box-shadow: none; transition: border-color .22s ease, transform .22s ease, background .22s ease; }
+.table-card:hover { border-color: var(--guild-gold-light); background: #18150f; box-shadow: none; transform: translateY(-5px); }
+.table-image { height: 185px; overflow: hidden; background: #211a10; }
+.table-image::after { position: absolute; inset: 0; content: ''; background: linear-gradient(transparent 55%, rgba(0, 0, 0, .55)); pointer-events: none; }
+.table-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.table-card:hover .table-image img { transform: scale(1.045); }
+.table-header { padding: 1.2rem 1.25rem .15rem; }
+.table-name { margin: 0; color: #f0e6c8; font-family: Georgia, serif; font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+.table-info { padding: .45rem 1.25rem .75rem; }
+.info-row { display: flex; justify-content: space-between; gap: 1rem; padding: .56rem 0; border-bottom: 1px solid rgba(240, 230, 140, .12); }
+.info-label { color: var(--guild-gold); font-family: Georgia, serif; font-size: .71rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.info-value { overflow: hidden; color: #d9d0c0; font-size: .88rem; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.vacancy-badge { align-self: flex-start; margin: .2rem 1.25rem 1rem; padding: .28rem .58rem; border: 1px solid rgba(240, 230, 140, .3); border-radius: 999px; color: var(--guild-gold-light); font-size: .72rem; letter-spacing: .03em; }
+.vacancy-badge span { display: inline-flex; align-items: center; gap: .4rem; }
+.vacancy-badge span::before { width: 6px; height: 6px; border-radius: 50%; background: var(--guild-gold); content: ''; }
+.btn-join { min-height: 42px; margin: 0 1.25rem 1.25rem; padding: .6rem .8rem; border: 1px solid var(--guild-gold); border-radius: 7px; background: rgba(212, 175, 55, .08); color: var(--guild-gold-light); cursor: pointer; font-family: Georgia, serif; font-size: .78rem; font-weight: 700; transition: background .2s ease, color .2s ease; }
+.btn-join:hover { background: var(--guild-gold); color: #171109; }
+
+.features-section { min-height: auto; isolation: isolate; padding: clamp(4.5rem, 8vw, 7rem) 0; }
+.features-grid { gap: 1rem; margin-top: 2.1rem; }
+.feature-card { min-height: 220px; padding: 1.6rem; border: 1px solid rgba(212, 175, 55, .35); border-radius: 14px; background: rgba(14, 11, 8, .68); box-shadow: none; transition: transform .22s ease, background .22s ease, border-color .22s ease; }
+.feature-card:hover { border-color: var(--guild-gold-light); background: rgba(31, 23, 13, .84); box-shadow: none; transform: translateY(-4px); }
+.feature-icon { display: grid; width: 38px; height: 38px; place-items: center; margin-bottom: 1.15rem; color: var(--guild-gold-light); }
+.feature-icon svg, .step-icon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.45; }
+.feature-card h3 { margin: 0; color: #fff0c8; font-family: 'GuildDisplay', Georgia, serif; font-size: 1.55rem; font-weight: 400; }
+.feature-card p { margin: .7rem 0 0; color: #d7cebf; font-size: .95rem; line-height: 1.6; }
+
+.getting-started-section { padding: clamp(4rem, 7vw, 6rem) 0; background: #050505; border-top: 1px solid rgba(212, 175, 55, .22); }
+.start-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; margin-top: 2.1rem; }
+.start-step { display: flex; gap: 1rem; align-items: flex-start; padding: 1.45rem; border: 1px solid rgba(212, 175, 55, .32); border-radius: 12px; background: #100f0d; }
+.step-icon { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; color: var(--guild-gold-light); }
+.start-step h3 { margin: .08rem 0 0; color: #fff0c8; font-family: 'GuildDisplay', Georgia, serif; font-size: 1.45rem; font-weight: 400; }
+.start-step p { margin: .45rem 0 0; color: #d0c7b7; font-size: .94rem; line-height: 1.6; }
+.site-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.2rem max(1.5rem, calc((100% - 1160px) / 2)); border-top: 1px solid rgba(212, 175, 55, .2); background: #020202; color: #bcb09a; font-size: .88rem; }
+.site-footer p { margin: 0; color: var(--guild-gold); font-family: 'GuildDisplay', Georgia, serif; font-size: 1.25rem; }
+.site-footer a { color: #ddd1b8; text-decoration-color: rgba(212, 175, 55, .55); text-underline-offset: 3px; }
+.site-footer a:hover { color: var(--guild-gold-light); }
+
+.modal2 { border: 1px solid rgba(212, 175, 55, .65); border-radius: 14px; background: #18130e; box-shadow: 0 22px 52px rgba(0, 0, 0, .5); }
+.modal2 h2 { color: var(--guild-gold-light); font-family: 'GuildDisplay', Georgia, serif; font-weight: 400; }
+.modal-close { border-radius: 50%; background: rgba(0, 0, 0, .18); color: var(--guild-gold-light); }
+.form-group input { border-radius: 7px; background: rgba(0, 0, 0, .3); color: #fff4d8; }
+.form-group input:focus { border-color: var(--guild-gold-light); box-shadow: 0 0 0 3px rgba(212, 175, 55, .15); outline: none; }
+.image-upload-label { border-radius: 7px; color: var(--guild-gold-light); }
+.home ::-webkit-scrollbar { width: 10px; }
+.home ::-webkit-scrollbar-track { background: #090909; }
+.home ::-webkit-scrollbar-thumb { border: 2px solid #090909; border-radius: 999px; background: var(--guild-gold-dim, #8b7500); }
+
+@media (max-width: 768px) {
+  .hero-content { grid-template-columns: 1fr; width: min(92%, 620px); padding-top: 4rem; }
+  .hero-text { width: 100%; }
+  .hero-dragon { min-height: 280px; }
+  .auth-buttons { flex-direction: row; }
+  .btn { width: auto; }
+  .start-steps { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .tables-container, .features-container, .getting-started-container { width: min(100% - 2rem, 460px); }
+  .auth-buttons { flex-direction: column; width: 100%; }
+  .btn { width: 100%; }
+  .hero-dragon { min-height: 230px; padding: 1rem; }
+  .table-image { height: 165px; }
+  .site-footer { align-items: flex-start; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home *, .home *::before, .home *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+/* Ajustes pontuais: hero, mesas recentes e responsividade */
+.hero-section::before {
+  position: absolute;
+  inset: 22px;
+  z-index: 1;
+  content: '';
+  border-top: 1px solid rgba(240, 230, 140, .35);
+  border-bottom: 1px solid rgba(240, 230, 140, .2);
+  pointer-events: none;
+}
+.hero-section::after {
+  position: absolute;
+  top: 22px;
+  right: 7%;
+  z-index: 1;
+  width: min(23vw, 260px);
+  height: 1px;
+  background: var(--guild-gold-light);
+  box-shadow: 0 10px 0 rgba(240, 230, 140, .32), 0 20px 0 rgba(240, 230, 140, .14);
+  content: '';
+  pointer-events: none;
+}
+.hero-content { position: relative; z-index: 2; }
+.hero-dragon { min-height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; animation: none; }
+.hero-logo { width: min(100%, 360px); height: auto; overflow: visible; filter: drop-shadow(0 22px 24px rgba(0, 0, 0, .5)); }
+.hero-logo .logo-ring { fill: rgba(7, 7, 5, .18); stroke: rgba(240, 230, 140, .68); stroke-width: 1.5; }
+.hero-logo .logo-shield { fill: #15120c; stroke: var(--guild-gold-light); stroke-width: 3; stroke-linejoin: round; }
+.hero-logo .logo-die { fill: rgba(212, 175, 55, .14); stroke: var(--guild-gold); stroke-width: 2; stroke-linejoin: round; }
+.hero-logo .logo-mark { fill: none; stroke: var(--guild-gold-light); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.hero-logo .logo-sword { fill: none; stroke: #f1e8d2; stroke-width: 3; stroke-linecap: round; }
+
+.tables-grid { margin-top: .4rem; }
+.table-card { position: relative; isolation: isolate; }
+.table-card::before { position: absolute; top: 0; right: 18px; left: 18px; z-index: 2; height: 2px; background: var(--guild-gold); content: ''; opacity: .72; }
+.table-card::after { position: absolute; inset: 9px; z-index: -1; border: 1px solid rgba(240, 230, 140, .1); border-radius: 9px; content: ''; pointer-events: none; }
+.table-image { height: 200px; margin: 9px 9px 0; border-radius: 9px 9px 0 0; }
+.table-header { padding: 1.35rem 1.35rem .4rem; }
+.table-title-row { display: flex; align-items: center; }
+.table-name { position: relative; padding-bottom: .7rem; font-size: .9rem; }
+.table-name::after { position: absolute; right: 0; bottom: 0; left: 0; height: 1px; background: linear-gradient(90deg, rgba(212, 175, 55, .55), transparent); content: ''; }
+.table-info { padding: .55rem 1.35rem 1rem; }
+.info-row { position: relative; padding: .72rem 0 .72rem .8rem; }
+.info-row::before { position: absolute; top: 50%; left: 0; width: 3px; height: 3px; border-radius: 50%; background: var(--guild-gold); content: ''; transform: translateY(-50%); }
+.vacancy-badge { margin-top: .35rem; }
+.btn-join { position: relative; overflow: hidden; }
+.btn-join::after { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; background: var(--guild-gold-light); content: ''; }
+.find-tables-button { display: flex; align-items: center; justify-content: center; min-width: 190px; margin: 2.25rem auto 0; }
+
+@media (max-width: 900px) {
+  .hero-content { grid-template-columns: 1fr; width: min(92%, 760px); padding-top: 5.5rem; }
+  .hero-text { width: 100%; max-width: none; }
+  .hero-dragon { display: none; }
+  .auth-buttons { width: 100%; }
+  .auth-buttons .btn { flex: 1; }
+  .hero-section::after { right: 4%; width: 170px; }
+}
+
+/* Ornamentos vetoriais da página */
+.hero-section::before,
+.hero-section::after { display: none; }
+.hero-ornaments { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.hero-ornament { position: absolute; width: 150px; height: 150px; fill: none; stroke: rgba(240, 230, 140, .42); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.2; }
+.hero-ornament circle { fill: rgba(212, 175, 55, .12); }
+.hero-ornament--top-left { top: 25px; left: 28px; }
+.hero-ornament--top-right { top: 25px; right: 28px; transform: scaleX(-1); }
+.hero-ornament--bottom-left { bottom: 25px; left: 28px; transform: scaleY(-1); }
+.hero-ornament--bottom-right { right: 28px; bottom: 25px; transform: scale(-1); }
+
+.recent-tables-section,
+.features-section,
+.getting-started-section { position: relative; overflow: hidden; }
+.tables-container,
+.features-container,
+.getting-started-container { position: relative; z-index: 2; }
+.section-ornament { position: absolute; z-index: 1; fill: none; stroke: rgba(212, 175, 55, .22); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.25; pointer-events: none; }
+.section-ornament circle { fill: rgba(240, 230, 140, .08); }
+.section-ornament--tables { top: 50%; left: 2.5%; width: 160px; height: 270px; transform: translateY(-50%); }
+.section-ornament--features { top: 50%; right: 2.5%; width: 160px; height: 270px; transform: translateY(-50%); }
+.section-ornament--start { right: 5%; bottom: 8%; width: 210px; height: 182px; opacity: .72; }
+
+@media (max-width: 900px) {
+  .hero-ornaments,
+  .section-ornament { display: none; }
+}
+
+.title { font-size: clamp(4.7rem, 9vw, 6rem); }
+.find-tables-button { margin: 0 0 2.25rem; }
+
+@media (min-width: 501px) and (max-width: 900px) {
+  .auth-buttons { width: auto; }
+  .auth-buttons .btn { width: auto; flex: 0 0 auto; }
+}
+@media (max-width: 500px) {
+  .auth-buttons { flex-direction: column; width: 100%; }
+  .auth-buttons .btn { width: 100%; }
+}
+
+.hero-logo-image {
+  display: block;
+  width: min(100%, 380px);
+  max-height: 365px;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 24px rgba(0, 0, 0, .5));
+}
+.section-ornament--tables-two { right: 4%; bottom: 7%; width: 120px; height: 120px; opacity: .58; }
+.section-ornament--features-two { top: 13%; left: 4%; width: 124px; height: 124px; opacity: .48; }
+.section-ornament--start-two { top: 12%; left: 4%; width: 118px; height: 118px; opacity: .45; }
+
+@media (max-width: 500px) {
+  .table-card { min-width: 0; }
+  .vacancy-badge { align-self: stretch; min-height: 34px; margin: .45rem 1rem .7rem; padding: .45rem .65rem; text-align: center; }
+  .vacancy-badge span { justify-content: center; }
+  .btn-join { display: block; width: calc(100% - 2rem); min-height: 44px; margin: 0 1rem 1rem; white-space: normal; }
+}
+
+.find-tables-button {
+  width: auto;
+  min-width: 190px;
+  min-height: 48px;
+  align-self: center;
+  margin: .4rem 0 2.25rem;
+  padding: .7rem 1.25rem;
+  line-height: 1.1;
+  text-align: center;
+}
+.vacancy-badge {
+  display: flex;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  min-height: 32px;
+  align-self: flex-start;
+  align-items: center;
+  margin: .45rem 1rem .7rem;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.vacancy-badge span { display: inline-flex; align-items: center; white-space: nowrap; }
+
+@media (max-width: 500px) {
+  .vacancy-badge { width: max-content; align-self: flex-start; padding: .38rem .58rem; text-align: left; }
+  .vacancy-badge span { justify-content: flex-start; }
+}
+
+.vacancy-badge {
+  width: min(50%, 148px);
+  min-height: 32px;
+  margin-right: auto;
+  margin-left: auto;
+  box-sizing: border-box;
+  text-align: center;
+}
+.vacancy-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: #35de6d;
+  background: rgba(53, 222, 109, .08);
+  color: #77f09d;
+  font-size: .63rem;
+  white-space: nowrap;
+}
+.vacancy-badge span { justify-content: center; }
+.vacancy-badge span::before { background: #35de6d; box-shadow: 0 0 8px rgba(53, 222, 109, .7); }
+.btn-join {
+  display: block;
+  width: calc(100% - 2.7rem);
+  min-height: 48px;
+  align-self: center;
+  margin: 0 1.35rem 1.35rem;
+  padding: .7rem 1rem;
+  box-sizing: border-box;
+  font-size: .88rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+.btn-join:focus-visible {
+  outline: 2px solid var(--guild-gold-light);
+  outline-offset: -4px;
+}
+
+@media (max-width: 500px) {
+  .vacancy-badge { width: min(50%, 148px); margin-right: auto; margin-left: auto; }
+}
 </style>
