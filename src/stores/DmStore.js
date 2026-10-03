@@ -36,19 +36,24 @@ export const useMensagensStore = defineStore('mensagens', () => {
 
     lista.value = []
     listaLida.value = []
+    carregarMensagens()
     connectPromise = new Promise((resolve, reject) => {
       stompClient.value = new Client({
         webSocketFactory: () => new SockJS('/dx-rpg'),
-        connectHeaders: { Authorization: `Bearer ${token}` },
+         connectHeaders: {
+          Authorization: `Bearer ${authStore.getToken()}`
+        },
+        heartbeatIncoming: 10000, // espera receber um sinal do servidor a cada 10s
+        heartbeatOutgoing: 10000, // manda um sinal pro servidor a cada 10s
         reconnectDelay: 5000,
-        connectionTimeout: 10000,
         onConnect: () => {
+          console.log('✅ CONECTOU NO SOCKET DAS MENSAGENS', new Date().toISOString())
           stompClient.value.subscribe(`/topic/user/${encodeURIComponent(usuario)}`, (mensagemRecebida) => {
             const mensagem = JSON.parse(mensagemRecebida.body)
             lista.value.push(mensagem)
             lista.value.sort((a, b) => new Date(b.data) - new Date(a.data))
           })
-          carregarMensagens()
+          
           connectPromise = null
           resolve(true)
         },

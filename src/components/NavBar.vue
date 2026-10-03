@@ -853,6 +853,10 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 
 /* Responsive Design */
 @media (max-width: 768px) {
+   .brand-link {
+    display: none;
+    font-size: 1.2rem;
+  }
   .direct-messages-panel {
     position: fixed;
     inset: 0;
@@ -928,12 +932,14 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 }
 
 @media (max-width: 480px) {
+  
   .navbar-container {
     padding: 0.1rem 0.4rem;
     min-height: 27px;
   }
 
   .brand-link {
+    display: none;
     font-size: 1.2rem;
   }
 

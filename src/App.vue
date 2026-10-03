@@ -6,19 +6,22 @@ import { useAuthStore } from '@/stores/auth.js'
 import { useMensagensStore } from '@/stores/DmStore.js'
 import { watch } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 const route = useRoute()
 const authStore = useAuthStore()
 const mensagensStore = useMensagensStore()
-
+const router = useRouter()
 
 const useAuthenticatedNav = computed(() => (
   Boolean(authStore.Navcontroller) &&
   (route.path === '/perfil' || route.path === '/buscar' || route.path.startsWith('/mesa/'))
 ))
 
-onMounted(() => {
-  if (authStore.getToken() && authStore.getUser()) {
+onMounted(async () => {
+   await router.isReady() 
+  if (authStore.getToken() && authStore.getUser() && route.path !== '/perfil') {
     mensagensStore.conexao().catch((error) => console.error('Erro ao iniciar mensagens diretas:', error))
+    console.log('Conexão de mensagens diretas iniciada.')
   }
 })
 

@@ -232,6 +232,7 @@ const enviarMensagem = (type) => {
   });
 
   mensagem.value = '';
+  if (campoMensagem.value) campoMensagem.value.style.height = ''
 };
 const handleFileUpload = (event) => {
 
@@ -286,12 +287,15 @@ const enviarImagem = async () => {
   }); 
 
   mensagem.value = '';
+  if (campoMensagem.value) campoMensagem.value.style.height = ''
   } catch (e) {
     console.error('Erro ao enviar mensagem:', e)
   }
 }
 var page = 0
-
+function mostrarErro(mensagem) {
+  alert(`Erro do servidor: ${mensagem}`)
+}
 onMounted(async () => {
     try {
         const nomeMesa = encodeURIComponent(route.params.nome || route.params.id || '')
@@ -356,11 +360,17 @@ onMounted(async () => {
         } 
     }
    
-    const socket = new SockJS('/dx-rpg');
 
     stompClient.value = new Client({
-        webSocketFactory: () => socket,
+        webSocketFactory: () => new SockJS('/dx-rpg'),
+        connectHeaders: {
+          Authorization: `Bearer ${authStore.getToken()}`
+        },
+        heartbeatIncoming: 10000, // espera receber um sinal do servidor a cada 10s
+        heartbeatOutgoing: 10000, // manda um sinal pro servidor a cada 10s
+        reconnectDelay: 5000,
         onConnect: () => {
+          console.log('✅ CONECTOU', new Date().toISOString());
             console.log('Conectado ao WebSocket!');
             console.log(route.params.id)
             stompClient.value.subscribe(`/topic/mesa/${route.params.nome}`, (mensagemRecebida) => {
@@ -453,6 +463,9 @@ onMounted(async () => {
                 }
                 
             });
+             stompClient.value.subscribe('/user/queue/errors', (msg) => {
+              mostrarErro(msg.body);
+            });
             stompClient.value.publish({
           
             destination: `/app/mesas/ping/${route.params.nome}`, 
@@ -464,8 +477,17 @@ onMounted(async () => {
             })
           });
         },
+         onStompError: (frame) => {
+          console.log('❌ ERRO STOMP:', frame.headers['message'], new Date().toISOString());
+        },
+        onWebSocketClose: (event) => {
+            console.log('🔌 WS FECHOU. Code:', event.code, 'Reason:', event.reason, new Date().toISOString());
+        },
+        onWebSocketError: (event) => {
+            console.log('⚠️ WS ERROR:', event, new Date().toISOString());
+        },
         onStompError: (frame) => {
-            console.error('Erro no STOMP: ' + frame.headers['message']);
+                console.error('Erro no STOMP: ' + frame.headers['message']);
         }
     });
 
@@ -640,10 +662,24 @@ let scrollAtual = 0;
 // 1. Salva a posição antes de começar a mexer na tela
 
 const mensagem = ref('')
+const campoMensagem = ref(null)
 const mostrarBotaoMensagensAntigas = ref(false)
 const dadosSelecionados = ref([])
 const bonusRolagem = ref(0)
 const painelMobile = ref(null)
+
+const ajustarAlturaMensagem = (event) => {
+  const campo = event.target
+  campo.style.height = 'auto'
+  campo.style.height = `${Math.min(campo.scrollHeight, 140)}px`
+}
+
+const tratarTeclaMensagem = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    enviarMensagem('texto')
+  }
+}
 const painelMobileAberto = ref(false)
 const diceModalOpen = ref(false)
 const modalArquivoAberto = ref(false)
@@ -697,6 +733,10 @@ function abrirMenu(event, item) {
 
 async function CriarPasta() {
   try {
+    if(meuMapa.value[itemSelecionado.value] > 10){
+      alert('Não é possível criar mais pastas nesse nível.')
+      return
+    }
     var eraiz = false;
     if(itemSelecionado.value == null){
       eraiz = true
@@ -713,7 +753,6 @@ async function CriarPasta() {
     })
     const pastaCriada = res.data.node 
     if(!res.data.raiz){
-        console.log("é razin sim")
         const index = pastas.value.findIndex(pasta => pasta.nome === itemSelecionado.value);
         console.log
         console.log('Pasta criada:', pastaCriada)
@@ -1385,10 +1424,13 @@ function rolarDados() {
               </svg>
           </div>
             <div v-for="msg in mensagens" :key="msg.id" class="message-item  d-flex justify-content-start align-items-center">
-              <img :src="msg.image" alt="Avatar" class="rounded-circle me-2" width="40" height="40">
-              <div class="w-100">
+             
+              <div class="w-100 d-flex justify-content-start flex-column align-items-start message-bubble" :class="{ 'message-own': msg.criador === authStore.getUser() }">
                 <div class="message-head">
-                  <strong>{{ msg.criador }}</strong>
+                  <div class="d-flex">
+                    <img :src="msg.image" alt="Avatar" class="rounded-circle me-2" width="40" height="40">
+                    <strong>{{ msg.criador }}</strong>
+                  </div>
                   <span>{{ new Date(msg.dataEnvio).toLocaleTimeString() }} : {{ new Date(msg.dataEnvio).toLocaleDateString() }}</span>
                 </div>
                 <p v-if="!msg.tipo || msg.tipo === 'texto'" class="break">{{ msg.message ?? msg.input ?? msg.mensagem }}</p>
@@ -1494,7 +1536,15 @@ function rolarDados() {
             </div>
           </div>
           </Teleport>
-          <input v-model="mensagem" type="text" placeholder="Escreva uma mensagem..." />
+          <textarea
+            maxlength="2000"
+            ref="campoMensagem"
+            v-model="mensagem"
+            rows="1"
+            placeholder="Escreva uma mensagem..."
+            @input="ajustarAlturaMensagem"
+            @keydown="tratarTeclaMensagem"
+          ></textarea>
           <button type="submit" class="composer-send-btn">
             <span>Enviar</span>
             <span class="send-button-icon" aria-hidden="true">➤</span>
@@ -2982,16 +3032,45 @@ li {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
-.composer > input:not(.chat-image-input) {
+.composer > textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  max-height: 140px;
+  min-height: 42px;
   padding: 0.7rem 0.8rem;
-  border-radius: 999px;
+  border-radius: 1.25rem;
   border: 1px solid rgba(212,175,55,0.2);
   background: rgba(0,0,0,0.45);
   color: #f5e9d0;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-  width: 100%;
-  min-height: 42px;
   font-size: 0.9rem;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,175,55,0.7) rgba(0,0,0,0.35);
+}
+
+.composer > textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.composer > textarea::-webkit-scrollbar-track {
+  margin-block: 0.65rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+}
+
+.composer > textarea::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(240,230,140,0.35);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e5c158, #b88a16);
+}
+
+.composer > textarea::-webkit-scrollbar-thumb:hover {
+  background: #f0e68c;
 }
 
 .modal-arquivo {
@@ -3349,7 +3428,7 @@ li {
   /* Composer fixed at bottom on mobile */
   /* Use a CSS variable to keep composer height in sync with messages padding without JS. */
   .composer {
-    --composer-height: 76px; /* fallback; tune if composer contents change */
+    --composer-height: 176px;
     position: fixed;
     left: 0.7rem;
     right: 0.7rem;
@@ -3365,9 +3444,16 @@ li {
     align-items: center;
     gap: 0.6rem;
     padding: 0.56rem 0.9rem; /* control visual height */
-    height: var(--composer-height);
+    height: auto;
     min-height: 56px;
+    max-height: var(--composer-height);
+    align-items: flex-end;
     box-sizing: border-box;
+  }
+
+  .composer > textarea {
+    min-height: 3.5rem;
+    padding-block: 0.5rem;
   }
 
   /* Ensure messages area has space so last messages are not hidden by fixed composer */

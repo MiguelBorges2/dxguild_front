@@ -381,7 +381,7 @@ async function handleRegister(){
           </form>
            <p class="erro" >{{ erroCriar }}</p>
           <p class="modal-footer">
-            Já tem conta? <button class="link-btn" @click="showRegisterModal = false; showLoginModal = true">Faça login</button>
+            Já tem conta?  <button class="link-btn" @click="showRegisterModal = false; showLoginModal = true">Faça login</button>
           </p>
         </div>
       </div>
@@ -854,9 +854,9 @@ async function handleRegister(){
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
 
-.modal2-footer {
+.modal-footer {
   text-align: center;
-  color: #999;
+  color: #d4af37;
   margin-top: 1.5rem;
   font-size: 0.95rem;
 }
@@ -864,15 +864,14 @@ async function handleRegister(){
 .link-btn {
   background: none;
   border: none;
-  color: #d4af37;
+  color: inherit;
   cursor: pointer;
   text-decoration: underline;
   font-size: inherit;
-  transition: color 0.3s ease;
 }
 
 .link-btn:hover {
-  color: #f0e68c;
+  color: inherit;
 }
 
 /* Recent Tables Section */
@@ -999,11 +998,18 @@ async function handleRegister(){
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   margin-bottom: 1.2rem;
   text-align: center;
 }
 
 .table-name {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: 'Cinzel', serif;
   font-size: 1.35rem;
   color: #f7e7b9;
