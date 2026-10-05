@@ -17,14 +17,15 @@ const useAuthenticatedNav = computed(() => (
   (route.path === '/perfil' || route.path === '/buscar' || route.path.startsWith('/mesa/'))
 ))
 
+// Inicia as mensagens diretas quando a sessão está autenticada.
 onMounted(async () => {
    await router.isReady() 
   if (authStore.getToken() && authStore.getUser() && route.path !== '/perfil') {
     mensagensStore.conexao().catch((error) => console.error('Erro ao iniciar mensagens diretas:', error))
-    console.log('Conexão de mensagens diretas iniciada.')
   }
 })
 
+// Encerra a conexão de mensagens ao desmontar o aplicativo.
 onUnmounted(() => mensagensStore.desconectar())
 
 </script>

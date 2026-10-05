@@ -5,12 +5,14 @@ import { useAuthStore } from '@/stores/auth.js'
 import SockJS from 'sockjs-client'
 import { Client } from '@stomp/stompjs'
 
+// Configura o estado e as ações das mensagens diretas.
 export const useMensagensStore = defineStore('mensagens', () => {
   const lista = ref([])
   const listaLida = ref([])
   const stompClient = ref(null)
   let connectPromise = null
 
+  // Carrega as mensagens do usuário e separa as lidas das não lidas.
   const carregarMensagens = async () => {
     try {
       const res = await api.get(`/dxguild/direct/${encodeURIComponent(useAuthStore().getUser())}`)
@@ -25,6 +27,7 @@ export const useMensagensStore = defineStore('mensagens', () => {
     }
   }
 
+  // Abre a conexão em tempo real e assina as mensagens recebidas.
   const conexao = () => {
     if (stompClient.value?.connected) return Promise.resolve(true)
     if (connectPromise) return connectPromise
@@ -47,7 +50,6 @@ export const useMensagensStore = defineStore('mensagens', () => {
         heartbeatOutgoing: 10000, // manda um sinal pro servidor a cada 10s
         reconnectDelay: 5000,
         onConnect: () => {
-          console.log('✅ CONECTOU NO SOCKET DAS MENSAGENS', new Date().toISOString())
           stompClient.value.subscribe(`/topic/user/${encodeURIComponent(usuario)}`, (mensagemRecebida) => {
             const mensagem = JSON.parse(mensagemRecebida.body)
             lista.value.push(mensagem)
@@ -71,6 +73,7 @@ export const useMensagensStore = defineStore('mensagens', () => {
     return connectPromise
   }
 
+  // Encerra a conexão ativa e limpa a promessa de conexão.
   const desconectar = () => {
     if (stompClient.value) {
       stompClient.value.deactivate()
@@ -79,6 +82,7 @@ export const useMensagensStore = defineStore('mensagens', () => {
     connectPromise = null
   }
 
+  // Publica uma mensagem no destino informado.
   const enviarMensagem = async (destino, dados) => {
     try {
       if (!stompClient.value?.connected) await conexao()
@@ -97,6 +101,7 @@ export const useMensagensStore = defineStore('mensagens', () => {
     }
   }
 
+  // Move para a lista de lidas as mensagens da mesa informada.
   const marcarComoLida = async (mesa) => {
     for (let i = 0; i < lista.value.length; i++) {
       if (lista.value[i].mesa === mesa) {

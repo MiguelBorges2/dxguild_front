@@ -9,19 +9,20 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(localStorage.getItem('chat_nome') || null);
   const imagem = ref(localStorage.getItem('chat_imagem') || null);
 
+  // Atualiza o nome do usuário em memória.
   function setUser(newUser) {
     user.value = newUser
-    console.log("usuario setado" + user.value)
-  
-    console.log("entoru no watch do app.vue")
   }
+  // Retorna o nome do usuário atual.
   function getUser() {
     return user.value
   }
 
+  // Retorna a imagem do usuário atual.
   function getImagem() {
     return imagem.value
   }
+ // Atualiza os dados do usuário e reconecta as mensagens diretas.
  const setUsuario = (novoNome, novaImagem) => {
         user.value = novoNome;
         imagem.value = novaImagem; 
@@ -31,6 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
         mensagensStore.conexao();
        
     };
+  // Salva ou remove os tokens de autenticação.
   function setToken(newToken, newRefresh) {
     token.value = newToken
     Navcontroller.value = Boolean(newToken)
@@ -49,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
 
  
 
+  // Limpa os tokens de autenticação.
   function clearToken() {
     token.value = null
     Navcontroller.value = false
@@ -57,9 +60,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh')
   }
 
+  // Retorna o token de acesso.
   function getToken() {
     return token.value
   }
+  // Retorna o token de renovação.
   function getRefresh(){
     return refresh.value
   }

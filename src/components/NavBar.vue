@@ -23,6 +23,7 @@ const mensagensNaoLidas = computed(() =>
   mensagensStore.lista.filter((mensagem) => mensagem.visto === false).length
 )
 
+// Formata a data da mensagem para exibição.
 const formatarDataHora = (data) => {
   if (!data) return 'Data não disponível'
 
@@ -35,26 +36,30 @@ const formatarDataHora = (data) => {
   })
 }
 
+// Alterna a navegação principal.
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
 
+// Alterna o menu do usuário.
 const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
+// Alterna o painel de mensagens.
 const toggleMessages = () => {
   isMessagesOpen.value = !isMessagesOpen.value
 }
 
+// Fecha o painel de mensagens ao clicar fora dele.
 const closeMessagesOnOutsideClick = (event) => {
   if (isMessagesOpen.value && !messagesContainer.value?.contains(event.target)) {
     isMessagesOpen.value = false
   }
 }
+// Aceita o pedido de entrada e marca a mensagem como lida.
 const aceitarJogador = async (mensagem) => {
   // Implementar lógica para aceitar jogador
-  console.log('Aceitar jogador:', mensagem)
   try{
     const res = await api.post(`/dxguild/direct/aceitar`, {
         criador: authStore.getUser()  ,
@@ -76,9 +81,9 @@ const aceitarJogador = async (mensagem) => {
 }
 
   
+  // Recusa o pedido de entrada e marca a mensagem como lida.
   const recusarJogador = async (mensagem) => {
     // Implementar lógica para recusar jogador
-    console.log('Recusar jogador:', mensagem)
     try{
       const res = await api.post(`/dxguild/direct/rejeitar`, {
           criador: authStore.getUser()  ,
@@ -95,11 +100,13 @@ const aceitarJogador = async (mensagem) => {
       }
   }
 
+// Navega para a rota escolhida e fecha o menu.
 const navigateTo = (path) => {
   router.push(path)
   isMenuOpen.value = false
 }
 
+// Fecha o menu do usuário.
 const logout = () => {
   // Implementar logout aqui
   isUserMenuOpen.value = false
@@ -107,12 +114,14 @@ const logout = () => {
 
 
 
+// Registra o clique externo enquanto a navegação está montada.
 onMounted(() => {
   document.addEventListener('click', closeMessagesOnOutsideClick)
 })
 
 
 
+// Remove o listener de clique ao desmontar a navegação.
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeMessagesOnOutsideClick)
 })
@@ -332,7 +341,36 @@ onBeforeUnmount(() => {
   </nav>
 </template>
 
-<style>
+<style scoped>
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/cormorant-garamond-600.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/manrope-400.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/manrope-600.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/manrope-700.ttf') format('truetype');
+}
+
 * {
   box-sizing: border-box;
 }
@@ -349,13 +387,15 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   font-style: normal;
 }   
 .navbar {
-  background: black;
+  background: #101211;
+  color: #f4f2eb;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   padding: 0;
-  box-shadow: 0 2px 15px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.22);
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  border-bottom: 1px solid rgba(226, 186, 97, 0.3);
 }
 
 .authenticated-navbar .navbar-container {
@@ -378,18 +418,18 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 1px solid rgba(212, 175, 55, 0.35);
+  border: 1px solid rgba(226, 186, 97, 0.35);
   border-radius: 50%;
-  background: rgba(212, 175, 55, 0.08);
-  color: #f0e68c;
+  background: rgba(226, 186, 97, 0.08);
+  color: #edcc85;
   cursor: pointer;
   font-size: 1.2rem;
   transition: 0.25s ease;
 }
 
 .dm-button:hover {
-  background: rgba(212, 175, 55, 0.2);
-  box-shadow: 0 0 14px rgba(212, 175, 55, 0.3);
+  background: rgba(226, 186, 97, 0.2);
+  box-shadow: 0 3px 10px rgba(0,0,0,.2);
   transform: translateY(-1px);
 }
 
@@ -402,7 +442,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   height: 1.15rem;
   padding: 0 0.2rem;
   place-items: center;
-  border: 2px solid #090909;
+  border: 2px solid #101211;
   border-radius: 999px;
   background: #c0392b;
   color: #fff;
@@ -421,9 +461,9 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   width: min(400px, calc(100vw - 2rem));
   max-height: min(480px, calc(100vh - 5rem));
   overflow: hidden;
-  border: 1px solid rgba(212, 175, 55, 0.45);
+  border: 1px solid rgba(226, 186, 97, 0.45);
   border-radius: 12px;
-  background: linear-gradient(145deg, #17130e, #090909);
+  background: linear-gradient(145deg, #22251f, #101211);
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.65);
 }
 
@@ -433,20 +473,21 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.1rem;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  border-bottom: 1px solid rgba(226, 186, 97, 0.2);
 }
 
 .direct-messages-header h2 {
   margin: 0;
-  color: #f0e68c;
-  font-family: 'Cinzel', serif;
-  font-size: 1rem;
+  color: #edcc85;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 1.75rem;
 }
 
 .messages-close {
   border: 0;
   background: transparent;
-  color: #d9c88a;
+  color: #c4c8c0;
   cursor: pointer;
   font-size: 1rem;
 }
@@ -463,7 +504,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 
 .messages-empty {
   margin: 0;
-  color: #b9ad8c;
+  color: #b5b9b3;
   font-size: 0.85rem;
   line-height: 1.5;
   text-align: center;
@@ -482,14 +523,14 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   align-items: flex-start;
   gap: 0.7rem;
   padding: 0.75rem;
-  border: 1px solid rgba(212, 175, 55, 0.16);
+  border: 1px solid rgba(226, 186, 97, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
 }
 
 .message-card--unread {
-  border-color: rgba(212, 175, 55, 0.55);
-  background: rgba(212, 175, 55, 0.1);
+  border-color: rgba(226, 186, 97, 0.55);
+  background: rgba(226, 186, 97, 0.1);
 }
 
 .message-card--read {
@@ -500,7 +541,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   width: 2.35rem;
   height: 2.35rem;
   flex: 0 0 auto;
-  border: 1px solid rgba(212, 175, 55, 0.4);
+  border: 1px solid rgba(226, 186, 97, 0.4);
   border-radius: 50%;
   object-fit: cover;
 }
@@ -520,7 +561,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 .message-card strong {
   display: block;
   margin-bottom: 0.3rem;
-  color: #f0e68c;
+  color: #edcc85;
   font-size: 0.82rem;
 }
 
@@ -531,27 +572,27 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 }
 
 .message-card--unread .message-status {
-  color: #f0e68c;
+  color: #edcc85;
   font-weight: 700;
 }
 
 .message-table {
   display: block;
   margin-bottom: 0.35rem;
-  color: #a99b73;
+  color: #b5b9b3;
   font-size: 0.72rem;
 }
 
 .message-date {
   display: block;
   margin-bottom: 0.35rem;
-  color: #8f835f;
+  color: #939a94;
   font-size: 0.68rem;
 }
 
 .message-card p {
   margin: 0;
-  color: #d9c88a;
+  color: #c4c8c0;
   font-size: 0.82rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -597,8 +638,8 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  color: #f5e9d0;
-  font-family: 'Cinzel', serif;
+  color: #f4f2eb;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   font-size: 0.85rem;
   text-decoration: none;
 }
@@ -606,13 +647,13 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 .authenticated-profile img {
   width: 2rem;
   height: 2rem;
-  border: 2px solid #d4af37;
+  border: 2px solid #e2ba61;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .authenticated-profile:hover {
-  color: #f0e68c;
+  color: #edcc85;
 }
 
 .navbar-container {
@@ -635,17 +676,17 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   align-items: center;
   gap: 0.4rem;
   text-decoration: none;
-  color: #d4af37;
+  color: #e2ba61;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.75rem;
   transition: all 0.3s ease;
-  font-family: 'thewildbreathofzelda', sans-serif;
-  letter-spacing: 1px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: -0.025em;
 }
 
 .brand-link:hover {
-  color: #f0e68c;
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  color: #edcc85;
+  text-shadow: none;
 }
 
 .brand-icon {
@@ -653,7 +694,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 }
 
 .brand-text {
-  background: linear-gradient(135deg, #d4af37, #f0e68c);
+  background: linear-gradient(135deg, #e2ba61, #edcc85);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -672,7 +713,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 .menu-toggle span {
   width: 20px;
   height: 3px;
-  background-color: #d4af37;
+  background-color: #e2ba61;
   border-radius: 2px;
   transition: all 0.3s ease;
 }
@@ -697,7 +738,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 }
 
 .nav-links {
-  color: #d4af37;
+  color: #e2ba61;
   list-style: none;
   display: flex;
   gap: 2rem;
@@ -706,20 +747,20 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 }
 
 .nav-link {
-  color: #ccc;
+  color: #c4c8c0;
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
   padding: 0.3rem 0.75rem;
   border-radius: 4px;
   position: relative;
-  font-family: 'Cinzel', serif;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   font-size: 0.95rem;
 }
 
 .nav-link:hover {
-  color: #d4af37;
-  text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+  color: #e2ba61;
+  text-shadow: none;
 }
 
 .nav-link::after {
@@ -729,7 +770,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   left: 1rem;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #d4af37, #f0e68c);
+  background: linear-gradient(90deg, #e2ba61, #edcc85);
   transition: width 0.3s ease;
 }
 
@@ -752,22 +793,23 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 
 .user-button {
   background: transparent;
-  border: none;
-  color: #d4af37;
-  padding: 0;
+  border: 1px solid #79623c;
+  border-radius: 5px;
+  color: #e2ba61;
+  padding: 8px 14px;
   cursor: pointer;
   text-align: center;
   transition: all 0.3s ease;
-  font-weight: 500;
-  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   font-size: 0.95rem;
 }
 
 .user-button:hover {
-  background: rgba(212, 175, 55, 0.2);
-  border-color: #f0e68c;
-  color: #f0e68c;
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  background: rgba(226, 186, 97, 0.2);
+  border-color: #edcc85;
+  color: #edcc85;
+  box-shadow: inset 0 1px 0 rgba(255,236,188,.06);
 }
 
 .user-avatar {
@@ -788,11 +830,11 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   position: absolute;
   top: 100%;
   right: 0;
-  background: linear-gradient(180deg, #2d1f1a 0%, #1c120e 100%);
-  border: 1px solid #d4af37;
-  border-radius: 0 0 8px 8px;
-  margin-top: 0;
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.2);
+  background: linear-gradient(180deg, #191c1a 0%, #101211 100%);
+  border: 1px solid #e2ba61;
+  border-radius: 8px;
+  margin-top: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.4);
   animation: slideDown 0.3s ease;
   overflow: hidden;
 }
@@ -819,22 +861,23 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
 
 .login-card h3 {
   margin: 0;
-  color: #f0e6b8;
-  font-family: 'Cinzel', serif;
-  font-size: 1rem;
+  color: #f3dfb4;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  font-size: 1.75rem;
 }
 
 .login-label {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  color: #d4af37;
+  color: #e2ba61;
   font-size: 0.8rem;
 }
 
 .login-label input {
   padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid rgba(226, 186, 97, 0.25);
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
@@ -845,7 +888,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   padding: 0.55rem 0.7rem;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(135deg, #d4af37, #f0e68c);
+  background: linear-gradient(135deg, #e2ba61, #edcc85);
   color: #000;
   font-weight: 700;
   cursor: pointer;
@@ -895,8 +938,8 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
     left: 0;
     right: 0;
     flex-direction: column;
-    background: #2d1f1a;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    background: #191c1a;
+    border-bottom: 1px solid rgba(226, 186, 97, 0.2);
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
@@ -923,7 +966,7 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   }
 
   .nav-link:hover {
-    background: rgba(212, 175, 55, 0.1);
+    background: rgba(226, 186, 97, 0.1);
   }
 
   .brand-text {
@@ -963,5 +1006,37 @@ src: url('@/assets/fonts/EightBitDragon-anqx.ttf') ;
   .authenticated-actions {
     gap: 0.5rem;
   }
+}
+
+/* Acabamento compartilhado com a home e o perfil. */
+.navbar button, .navbar input { font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif; }
+.navbar a:focus-visible, .navbar button:focus-visible, .navbar input:focus-visible {
+  outline: 2px solid #e2ba61;
+  outline-offset: 3px;
+}
+.navbar .nav-link { font-weight: 600; }
+.navbar .nav-link.router-link-exact-active { color: #edcc85; background: rgba(226,186,97,.06); }
+.navbar .nav-link.router-link-exact-active::after { width: calc(100% - 2rem); }
+.navbar .authenticated-profile { min-width: 0; font-weight: 600; }
+.navbar .authenticated-profile span { max-width: 160px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.navbar .authenticated-profile img { box-shadow: 0 0 0 3px rgba(226,186,97,.07); }
+.navbar .login-submit { background: linear-gradient(180deg, #ebcb7d, #d6ae55); color: #19170f; }
+.navbar .login-label { color: #c4c8c0; font-weight: 600; }
+.navbar .login-label input { background: #101211; border-color: #555c50; }
+.navbar .message-card-heading strong { overflow-wrap: anywhere; }
+.navbar .message-table { overflow-wrap: anywhere; }
+.navbar .direct-messages-content { scrollbar-width: thin; scrollbar-color: #79623c #191c1a; }
+@media (max-width: 768px) {
+  .navbar .navbar-container { min-height: 48px; padding: 4px 12px; }
+  .navbar .menu-toggle { align-items: center; justify-content: center; width: 40px; height: 40px; }
+  .navbar .menu-toggle.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .navbar .menu-toggle.active span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+  .navbar .nav-link { display: flex; align-items: center; min-height: 44px; padding: 10px 20px; font-size: .875rem; }
+  .navbar .user-button { padding: 8px 12px; }
+  .navbar .login-card { width: min(280px, calc(100vw - 26px)); }
+  .navbar .login-label input { font-size: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar *, .navbar *::after { animation: none; transition: none; }
 }
 </style>

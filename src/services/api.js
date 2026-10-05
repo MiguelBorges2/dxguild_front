@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/',
 })
 
-// Interceptor para adicionar token nas requisições
+// Adiciona o token às requisições autenticadas.
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
@@ -23,7 +23,7 @@ api.interceptors.request.use(
   }
 )
 
-// Interceptor para tratar erros
+// Renova a autenticação quando uma requisição retorna erro 401.
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -46,7 +46,6 @@ api.interceptors.response.use(
           const data = res.data || {}
           const newAccessToken = data.acessToken || data.accessToken || data.token || data
           const newRefreshToken = data.refreshToken || authStore.getRefresh()
-          console.log(data)
           if (!newAccessToken) {
             throw new Error('Refresh failed: no access token returned')
           }
@@ -56,7 +55,7 @@ api.interceptors.response.use(
 
           return api(originalRequest)
         } catch (refreshError) {
-          console.log(refreshError)
+          console.error(refreshError)
           authStore.clearToken()
           router.push('/')
           return Promise.reject(refreshError)
