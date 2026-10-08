@@ -16,6 +16,11 @@ import { useMensagensStore } from '@/stores/DmStore.js'
 
 import { onMounted } from 'vue'
 
+import api from '@/services/api.js'
+
+
+const mensagensStore = useMensagensStore()
+
 const router = useRouter()
 
 const showLoginModal = ref(false)
@@ -65,7 +70,53 @@ const handleImageUpload = (event) => {
   }
 
 }
+const interestTableCreator = ref('')
+const interestTableName = ref('')
+const interestMessage = ref('')
+const interestMessageSent = ref(false)
+const showInterestModal = ref(false)
+async function checaJogador(mesaNome, criador) {
+  try {
+    const res = await api.get(`/dxguild/mesa/checaJogador/${encodeURIComponent(mesaNome)}`)
+    if (res.data === true) {
+      router.push(`/mesa/${encodeURIComponent(mesaNome)}`)
+    } 
+  } catch (error) {
+    if (error.response?.status === 403) {
+      interestTableCreator.value = criador
+      interestTableName.value = mesaNome
+      interestMessage.value = ''
+      interestMessageSent.value = false
+      showInterestModal.value = true
+      console.log(showInterestModal.value + "aqui o")
+    }
+    else {
+      console.error('Erro ao verificar se o usuário é jogador:', error)
+    }
+  }
+}
+async function sendInterestMessage() {
+    // Usa o método da store que já valida e envia pela conexão global ativa
+    const enviado = await mensagensStore.enviarMensagem(
+        `/app/user/${encodeURIComponent(interestTableCreator.value)}/${encodeURIComponent(useAuthStore().getUser())}`,
+        {
+            criador: interestTableCreator.value,
+            mesa: interestTableName.value,
+            mensagem: interestMessage.value,
+            visto: false,
+        }
+    );
 
+    // Fecha o modal ou atualiza o estado de enviado
+    if (enviado) interestMessageSent.value = true;
+}
+// Fecha e reinicia o modal de interesse.
+function closeInterestModal() {
+  showInterestModal.value = false
+  interestTableName.value = ''
+  interestMessage.value = ''
+  interestMessageSent.value = false
+}
 const erroCriar = ref('')
 
 const erroLog = ref('')
@@ -266,13 +317,13 @@ async function handleRegister(){
 
             <div class="auth-buttons">
 
-              <button class="btn btn-login" @click="showLoginModal = true">
+              <button id="login-button" class="btn btn-login" @click="showLoginModal = true">
 
                 Entrar
 
               </button>
 
-              <button class="btn btn-register" @click="showRegisterModal = true">
+              <button id="register-button" class="btn btn-register" @click="showRegisterModal = true">
 
                 Criar uma conta
 
@@ -325,7 +376,7 @@ async function handleRegister(){
           </div>
 
           <div class="tables-grid">
-            <div v-for="table in recentTables" :key="table.id" class="table-card" @click="router.push(`/mesa/${encodeURIComponent(table.nome)}`)">
+            <div v-for="table in recentTables" :key="table.id" class="table-card" @click="checaJogador(table.nome, table.criador)">
               <div class="table-image">
                 <img :src="table.imagem" :alt="table.nome" loading="lazy" />
               </div>
@@ -350,7 +401,7 @@ async function handleRegister(){
                 </div>
 
                 <div class="table-footer">
-                  <button class="btn-join" type="button" @click.stop="router.push(`/mesa/${encodeURIComponent(table.nome)}`)">
+                  <button class="btn-join" type="button">
                     Ver mesa <span aria-hidden="true">→</span>
                   </button>
                 </div>
@@ -763,7 +814,32 @@ async function handleRegister(){
       </div>
 
     </div>
+  <div v-if="showInterestModal" class="interest-modal-overlay" @click.self="closeInterestModal">
+      <section class="interest-modal" role="dialog" aria-modal="true" aria-labelledby="interest-modal-title">
+        <button type="button" class="interest-modal-close" aria-label="Fechar modal" @click="closeInterestModal">✕</button>
+        <span class="eyebrow">Interesse na aventura</span>
+        <h2 id="interest-modal-title">Você não participa da mesa ainda!</h2>
+        <p>
+          Que tal escrever uma mensagem para o mestre de <strong>{{ interestTableName }}</strong>
+          dizendo que você tem interesse?
+        </p>
 
+        <form v-if="!interestMessageSent" @submit.prevent="sendInterestMessage">
+          <label for="interest-message">Mensagem para o mestre</label>
+          <textarea
+            id="interest-message"
+            v-model="interestMessage"
+            rows="5"
+            placeholder="Escreva uma mensagem para o mestre..."
+            required
+          ></textarea>
+          <button  type="submit" class="interest-submit">Enviar mensagem</button>
+        </form>
+        <div v-else class="interest-success">
+          Sua mensagem foi enviada ao mestre!
+        </div>
+      </section>
+    </div>
 </template>
 
 <style scoped>
@@ -1777,6 +1853,286 @@ async function handleRegister(){
 
 }
 
+.interest-modal-overlay {
+
+  position: fixed;
+
+  z-index: 2000;
+
+  inset: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background: rgb(0 0 0 / 80%);
+
+}
+
+.interest-modal {
+
+  position: relative;
+
+  width: 100%;
+
+  max-width: 520px;
+
+  max-height: calc(100dvh - 48px);
+
+  overflow-y: auto;
+
+  padding: 32px;
+
+  border: 1px solid #65583b;
+
+  border-radius: 8px;
+
+  background: #191c1a;
+
+  color: #f4f2eb;
+
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+
+  font-size: 1rem;
+
+  line-height: 1.6;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: #65583b #191c1a;
+
+}
+
+.interest-modal,
+
+.interest-modal *,
+
+.interest-modal *::before,
+
+.interest-modal *::after {
+
+  box-sizing: border-box;
+
+}
+
+.interest-modal > .eyebrow {
+
+  display: block;
+
+  padding-right: 32px;
+
+  color: #e2ba61;
+
+  font-size: 0.6875rem;
+
+  font-weight: 600;
+
+  letter-spacing: 0.14em;
+
+  text-transform: uppercase;
+
+}
+
+.interest-modal h2 {
+
+  margin: 14px 24px 14px 0;
+
+  color: #f4f2eb;
+
+  font-family: 'Cormorant Garamond', Georgia, serif;
+
+  font-size: 2rem;
+
+  line-height: 1.25;
+
+  font-weight: 600;
+
+  letter-spacing: -0.025em;
+
+}
+
+.interest-modal p {
+
+  margin: 0 0 24px;
+
+  color: #b5b9b3;
+
+  font-size: 0.9375rem;
+
+  overflow-wrap: anywhere;
+
+}
+
+.interest-modal p strong {
+
+  color: #f4f2eb;
+
+}
+
+.interest-modal-close {
+
+  position: absolute;
+
+  top: 12px;
+
+  right: 12px;
+
+  display: grid;
+
+  place-items: center;
+
+  width: 44px;
+
+  height: 44px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 4px;
+
+  background: transparent;
+
+  color: #b5b9b3;
+
+  font-size: 1.125rem;
+
+  cursor: pointer;
+
+}
+
+.interest-modal-close:hover {
+
+  color: #f4f2eb;
+
+  background: #292d26;
+
+}
+
+.interest-modal form {
+
+  display: grid;
+
+  gap: 10px;
+
+}
+
+.interest-modal label {
+
+  color: #f4f2eb;
+
+  font-size: 0.875rem;
+
+  font-weight: 500;
+
+}
+
+.interest-modal textarea {
+
+  width: 100%;
+
+  min-height: 128px;
+
+  padding: 12px;
+
+  border: 1px solid #555c50;
+
+  border-radius: 5px;
+
+  background: #101211;
+
+  color: #f4f2eb;
+
+  font: inherit;
+
+  font-size: 0.9375rem;
+
+  line-height: 1.5;
+
+  resize: vertical;
+
+}
+
+.interest-modal textarea::placeholder {
+
+  color: #a5ada1;
+
+  opacity: 1;
+
+}
+
+.interest-modal textarea:focus-visible {
+
+  outline: 2px solid #e2ba61;
+
+  outline-offset: 4px;
+
+}
+
+.interest-submit {
+
+  min-height: 48px;
+
+  margin-top: 8px;
+
+  padding: 12px 18px;
+
+  border: 1px solid #e2ba61;
+
+  border-radius: 5px;
+
+  background: linear-gradient(180deg, #ebcb7d, #d6ae55);
+
+  color: #19170f;
+
+  font-size: 0.875rem;
+
+  font-weight: 700;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 3px 10px rgba(0,0,0,.18);
+
+  cursor: pointer;
+
+}
+
+.interest-submit:hover {
+
+  background: #f0cd81;
+
+  border-color: #f0cd81;
+
+}
+
+.interest-modal-close:focus-visible,
+
+.interest-submit:focus-visible {
+
+  outline: 2px solid #e2ba61;
+
+  outline-offset: 4px;
+
+}
+
+.interest-success {
+
+  padding: 16px;
+
+  border: 1px solid #365444;
+
+  border-radius: 6px;
+
+  background: #18271e;
+
+  color: #8dd9af;
+
+}
+
 @media (max-width: 1023px) {
 
   .hero-content,
@@ -1898,6 +2254,20 @@ async function handleRegister(){
     gap: 32px;
 
     padding-block: 36px;
+
+  }
+
+  .interest-modal-overlay {
+
+    padding: 16px;
+
+  }
+
+  .interest-modal {
+
+    max-height: calc(100dvh - 32px);
+
+    padding: 28px 20px;
 
   }
 

@@ -38,6 +38,10 @@ api.interceptors.response.use(
         if (!refreshToken) {
           authStore.clearToken()
           router.push('/')
+          await new Promise((resolve) => setTimeout(resolve, 200))
+          const document = window.document.getElementById('login-button')
+          document?.click() // Simula o clique no botão de login
+          console.log("teste")
           return Promise.reject(error)
         }
 
@@ -64,6 +68,10 @@ api.interceptors.response.use(
 
       authStore.clearToken()
       router.push('/')
+      await new Promise((resolve) => setTimeout(resolve, 200)) // Aguarda um pequeno atraso para garantir que a navegação ocorra antes do clique
+      const document = window.document.getElementById('login-button')
+      console.log("teste")
+      document?.click()
     }
 
     return Promise.reject(error)
